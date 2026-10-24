@@ -1374,10 +1374,24 @@ async function startServer() {
         const bcrypt = (await import('bcryptjs')).default;
         const defaultHash = await bcrypt.hash('password123', 10);
 
+        const deanEmail = process.env.DEAN_EMAIL || 'hodcse.erp@gmail.com';
+
+        // Migrate legacy dean@college.com to hodcse.erp@gmail.com if it exists
+        const legacyDean = await User.findOne({ where: { email: 'dean@college.com' } });
+        if (legacyDean && legacyDean.email !== deanEmail) {
+          legacyDean.email = deanEmail;
+          legacyDean.username = deanEmail;
+          legacyDean.passwordHash = defaultHash;
+          legacyDean.role = 'DEAN';
+          legacyDean.status = 'ACTIVE';
+          await legacyDean.save();
+          console.log(`✅ Migrated legacy Dean account to: ${deanEmail}`);
+        }
+
         const defaultUsers = [
           { email: 'admin@college.com', role: 'ADMIN', firstName: 'Shivakumar', lastName: 'Biradar', phone: '9876543200' },
           { email: 'principal@college.com', role: 'PRINCIPAL', firstName: 'Dr. S.V.', lastName: 'Gorbal', phone: '9876543201' },
-          { email: 'dean@college.com', role: 'DEAN', firstName: 'Dr. K.B.', lastName: 'Manwade', phone: '9876543203' },
+          { email: deanEmail, role: 'DEAN', firstName: 'Dr. K.B.', lastName: 'Manwade', phone: '9876543203' },
           { email: 'hod@college.com', role: 'HOD', firstName: 'Dr. Rahul', lastName: 'Sharma', phone: '9876543202' },
         ];
 
@@ -1395,6 +1409,15 @@ async function startServer() {
               phone: u.phone,
             });
             console.log(`✅ Ensured default ${u.role} user exists: ${u.email}`);
+          } else {
+            // Guarantee role is DEAN and status is ACTIVE with password reset if needed
+            if (u.role === 'DEAN') {
+              existing.role = 'DEAN';
+              existing.status = 'ACTIVE';
+              existing.passwordHash = defaultHash;
+              await existing.save();
+              console.log(`✅ Refreshed Dean account credentials: ${u.email}`);
+            }
           }
         }
       } catch (ensureErr: any) {

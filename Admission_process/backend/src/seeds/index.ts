@@ -153,8 +153,8 @@ export async function seed(exitOnComplete = false) {
     const principalPass = process.env.INITIAL_PRINCIPAL_PASSWORD || 'password123';
     const principalHash = await bcrypt.hash(principalPass, 10);
 
-    // Dean Academics (Demo user)
-    const deanEmail = 'dean@college.com';
+    // Dean Academics (Real user)
+    const deanEmail = process.env.DEAN_EMAIL || 'hodcse.erp@gmail.com';
     const deanPass = 'password123';
     const deanHash = await bcrypt.hash(deanPass, 10);
 
