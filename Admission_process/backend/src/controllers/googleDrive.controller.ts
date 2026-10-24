@@ -52,7 +52,8 @@ export const handleOAuthCallback = async (
     const state = req.query.state as string;
     const error = req.query.error as string;
 
-    const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const defaultFrontend = process.env.NODE_ENV === 'production' ? 'https://jcererp.pages.dev' : 'http://localhost:5173';
+    const frontendBaseUrl = process.env.FRONTEND_URL || defaultFrontend;
     const settingsUrl = `${frontendBaseUrl}/dean/settings/google-drive`;
 
     if (error) {
@@ -71,7 +72,8 @@ export const handleOAuthCallback = async (
     return res.redirect(`${settingsUrl}?status=success&email=${encodeURIComponent(integration.accountEmail || '')}`);
   } catch (error: any) {
     logger.error('GOOGLE_DRIVE_OAUTH_CALLBACK_ERROR:', error);
-    const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const defaultFrontend = process.env.NODE_ENV === 'production' ? 'https://jcererp.pages.dev' : 'http://localhost:5173';
+    const frontendBaseUrl = process.env.FRONTEND_URL || defaultFrontend;
     const settingsUrl = `${frontendBaseUrl}/dean/settings/google-drive`;
     return res.redirect(`${settingsUrl}?status=error&message=${encodeURIComponent(error.message || 'Failed to connect Google Drive.')}`);
   }

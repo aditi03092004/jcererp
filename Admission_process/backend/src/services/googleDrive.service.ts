@@ -107,7 +107,15 @@ export function resolveAttendanceDepartmentCode(input: string | null | undefined
 function getOAuth2Client() {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const redirectUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5000/api/google/oauth/callback';
+
+  const backendBase =
+    process.env.API_URL?.replace(/\/api\/?$/, '') ||
+    process.env.BACKEND_URL?.replace(/\/api\/?$/, '') ||
+    process.env.RENDER_EXTERNAL_URL ||
+    'http://localhost:5000';
+
+  const defaultRedirectUri = `${backendBase}/api/google/oauth/callback`;
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI || defaultRedirectUri;
 
   if (!clientId || !clientSecret) {
     throw new Error('Google OAuth credentials (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET) are missing from backend environment.');
