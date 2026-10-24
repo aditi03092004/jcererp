@@ -27,7 +27,7 @@ function escapeHtml(str: string): string {
 }
 
 export const GLOBAL_JCER_EMAIL_LOGO_URL =
-  'https://jcererp-system.pages.dev/emaillogo.png';
+  'https://jcererp.pages.dev/emaillogo.png';
 
 /**
  * Generate ONE unified, production-grade, JCER-branded responsive HTML email.

@@ -10,6 +10,7 @@ const allowedOriginsEnv = process.env.CORS_ORIGIN
   : [];
 
 const defaultAllowedOrigins = [
+  'https://jcererp.pages.dev',
   'https://jcererp-system.pages.dev',
   'https://jcer-admission-portal.pages.dev',
   'http://localhost:5173',

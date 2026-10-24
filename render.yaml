@@ -23,9 +23,9 @@ services:
       - key: REFRESH_TOKEN_SECRET
         generateValue: true
       - key: CORS_ORIGIN
-        value: https://jcererp-system.pages.dev
+        value: https://jcererp.pages.dev
       - key: FRONTEND_URL
-        value: https://jcererp-system.pages.dev
+        value: https://jcererp.pages.dev
 
 databases:
   - name: jcer-erp-postgres
