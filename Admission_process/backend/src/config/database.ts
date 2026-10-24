@@ -68,8 +68,8 @@ if (databaseUrl) {
     resolvedHost = parsed.hostname;
     resolvedDatabase = parsed.pathname.replace(/^\//, '');
   } catch {
-    resolvedHost = 'Railway PostgreSQL';
-    resolvedDatabase = 'Railway PostgreSQL database';
+    resolvedHost = 'Cloud PostgreSQL';
+    resolvedDatabase = 'Cloud PostgreSQL database';
   }
 
   // Initialize Sequelize directly with the sanitized database URL
@@ -161,7 +161,7 @@ export function logDatabaseConfiguration(): void {
 
   if (isProduction && connectionSource === 'MISSING') {
     console.error('❌ FATAL: DATABASE_URL is not configured for production.');
-    console.error('Please configure DATABASE_URL in your Railway service variables.');
+    console.error('Please configure DATABASE_URL in your Render/cloud service environment variables.');
     throw new Error('DATABASE_URL is not configured for production.');
   }
 }
