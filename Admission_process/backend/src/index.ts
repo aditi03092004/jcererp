@@ -1367,6 +1367,39 @@ async function startServer() {
       } catch (seedErr: any) {
         console.warn('⚠️ Production auto-seed notice:', seedErr.message);
       }
+
+      // Explicitly guarantee essential system accounts exist (Dean, Admin, Principal, HOD)
+      try {
+        const User = (await import('./models/User')).default;
+        const bcrypt = (await import('bcryptjs')).default;
+        const defaultHash = await bcrypt.hash('password123', 10);
+
+        const defaultUsers = [
+          { email: 'admin@college.com', role: 'ADMIN', firstName: 'Shivakumar', lastName: 'Biradar', phone: '9876543200' },
+          { email: 'principal@college.com', role: 'PRINCIPAL', firstName: 'Dr. S.V.', lastName: 'Gorbal', phone: '9876543201' },
+          { email: 'dean@college.com', role: 'DEAN', firstName: 'Dr. K.B.', lastName: 'Manwade', phone: '9876543203' },
+          { email: 'hod@college.com', role: 'HOD', firstName: 'Dr. Rahul', lastName: 'Sharma', phone: '9876543202' },
+        ];
+
+        for (const u of defaultUsers) {
+          const existing = await User.findOne({ where: { email: u.email } });
+          if (!existing) {
+            await User.create({
+              username: u.email,
+              email: u.email,
+              passwordHash: defaultHash,
+              role: u.role,
+              status: 'ACTIVE',
+              firstName: u.firstName,
+              lastName: u.lastName,
+              phone: u.phone,
+            });
+            console.log(`✅ Ensured default ${u.role} user exists: ${u.email}`);
+          }
+        }
+      } catch (ensureErr: any) {
+        console.warn('⚠️ Ensure default users notice:', ensureErr.message);
+      }
     }
     
     // Alter PostgreSQL enum values for Principal actions if they are missing
