@@ -1354,16 +1354,31 @@ async function startServer() {
         console.warn('Production sequelize.sync notice (continuing):', prodSyncErr.message);
       }
 
-      // Auto-seed initial Admin, Principal, Departments, and Rejection Reasons if database is fresh
+      // Auto-seed initial Departments, Semesters, Sections, Subjects if missing
       try {
-        const User = (await import('./models/User')).default;
-        const adminCount = await User.count({ where: { role: 'ADMIN' } }).catch(() => 0);
-        if (adminCount === 0) {
-          console.log('🌱 Unseeded database detected in production. Running initial seed...');
+        const Department = (await import('./models/Department')).default;
+        const deptCount = await Department.count().catch(() => 0);
+
+        if (deptCount < 5) {
+          console.log(`🌱 Database has only ${deptCount} departments. Running full college seed...`);
           const { seed } = await import('./seeds/index');
           await seed(false);
-          console.log('✅ Initial production database seed completed!');
+          console.log('✅ Full college database seed completed successfully!');
         }
+
+        // Guarantee all standard college branches are present
+        const standardDepts = [
+          { name: 'Computer Science & Engineering', code: 'CSE' },
+          { name: 'Electronics & Communication Engineering', code: 'ECE' },
+          { name: 'Mechanical Engineering', code: 'ME' },
+          { name: 'Civil Engineering', code: 'CV' },
+          { name: 'Computer Science & Engineering (AIML)', code: 'CSE-AIML' },
+          { name: 'Applied Science & Humanities', code: 'AS' },
+        ];
+        for (const d of standardDepts) {
+          await Department.findOrCreate({ where: { code: d.code }, defaults: d });
+        }
+        console.log('✓ All standard college departments verified & active.');
       } catch (seedErr: any) {
         console.warn('⚠️ Production auto-seed notice:', seedErr.message);
       }
