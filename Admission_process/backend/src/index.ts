@@ -1053,6 +1053,35 @@ async function startServer() {
       console.warn('Departments schema ensure notice:', deptMigErr.message);
     }
 
+    // Migration: Safely ensure Academic Years starting from 2026-27 exist
+    try {
+      await sequelize.query(`
+        DO $$
+        BEGIN
+          -- 2026-27 (Current Active Academic Year)
+          IF NOT EXISTS (SELECT 1 FROM "academic_years" WHERE "year" = '2026-27') THEN
+            INSERT INTO "academic_years" ("id", "year", "startDate", "endDate", "status", "isCurrent", "isOperational", "createdAt", "updatedAt")
+            VALUES (gen_random_uuid(), '2026-27', '2026-07-01', '2027-06-30', 'ACTIVE', true, true, NOW(), NOW());
+          END IF;
+
+          -- 2027-28 (Upcoming Academic Year)
+          IF NOT EXISTS (SELECT 1 FROM "academic_years" WHERE "year" = '2027-28') THEN
+            INSERT INTO "academic_years" ("id", "year", "startDate", "endDate", "status", "isCurrent", "isOperational", "createdAt", "updatedAt")
+            VALUES (gen_random_uuid(), '2027-28', '2027-07-01', '2028-06-30', 'UPCOMING', false, true, NOW(), NOW());
+          END IF;
+
+          -- 2028-29 (Future Academic Year)
+          IF NOT EXISTS (SELECT 1 FROM "academic_years" WHERE "year" = '2028-29') THEN
+            INSERT INTO "academic_years" ("id", "year", "startDate", "endDate", "status", "isCurrent", "isOperational", "createdAt", "updatedAt")
+            VALUES (gen_random_uuid(), '2028-29', '2028-07-01', '2029-06-30', 'UPCOMING', false, true, NOW(), NOW());
+          END IF;
+        END $$;
+      `);
+      console.log('✓ Academic years starting from 2026-27 verified in database.');
+    } catch (ayMigErr: any) {
+      console.warn('Academic years schema ensure notice:', ayMigErr.message);
+    }
+
     // Migration: Safely ensure attendance_sessions table and attendance_records.attendanceSessionId exist
     try {
       await sequelize.query(`
