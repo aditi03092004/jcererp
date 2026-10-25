@@ -1017,6 +1017,42 @@ async function startServer() {
       console.warn('Applied Science schema ensure notice:', asMigErr.message);
     }
 
+    // Migration: Safely ensure the 5 core engineering branches exist in departments table
+    try {
+      await sequelize.query(`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (SELECT 1 FROM "departments" WHERE "code" = 'CSE') THEN
+            INSERT INTO "departments" ("id", "name", "code", "type", "createdAt", "updatedAt")
+            VALUES (gen_random_uuid(), 'Computer Science & Engineering', 'CSE', 'STANDARD', NOW(), NOW());
+          END IF;
+
+          IF NOT EXISTS (SELECT 1 FROM "departments" WHERE "code" = 'ECE') THEN
+            INSERT INTO "departments" ("id", "name", "code", "type", "createdAt", "updatedAt")
+            VALUES (gen_random_uuid(), 'Electronics & Communication Engineering', 'ECE', 'STANDARD', NOW(), NOW());
+          END IF;
+
+          IF NOT EXISTS (SELECT 1 FROM "departments" WHERE "code" = 'ME') THEN
+            INSERT INTO "departments" ("id", "name", "code", "type", "createdAt", "updatedAt")
+            VALUES (gen_random_uuid(), 'Mechanical Engineering', 'ME', 'STANDARD', NOW(), NOW());
+          END IF;
+
+          IF NOT EXISTS (SELECT 1 FROM "departments" WHERE "code" = 'CV') THEN
+            INSERT INTO "departments" ("id", "name", "code", "type", "createdAt", "updatedAt")
+            VALUES (gen_random_uuid(), 'Civil Engineering', 'CV', 'STANDARD', NOW(), NOW());
+          END IF;
+
+          IF NOT EXISTS (SELECT 1 FROM "departments" WHERE "code" = 'CSE-AIML') THEN
+            INSERT INTO "departments" ("id", "name", "code", "type", "createdAt", "updatedAt")
+            VALUES (gen_random_uuid(), 'Computer Science & Engineering (AIML)', 'CSE-AIML', 'STANDARD', NOW(), NOW());
+          END IF;
+        END $$;
+      `);
+      console.log('✓ 5 Core engineering departments (CSE, ECE, ME, CV, CSE-AIML) verified in database.');
+    } catch (deptMigErr: any) {
+      console.warn('Departments schema ensure notice:', deptMigErr.message);
+    }
+
     // Migration: Safely ensure attendance_sessions table and attendance_records.attendanceSessionId exist
     try {
       await sequelize.query(`

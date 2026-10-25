@@ -20,4 +20,24 @@ router.get('/version', systemController.getVersion as any);
 router.get('/features', systemController.getFeatures as any);
 router.get('/branches', getBranches as any);
 
+router.get('/seed-departments', async (_req, res) => {
+  try {
+    const Department = (await import('../models/Department')).default;
+    const standardDepts = [
+      { name: 'Computer Science & Engineering', code: 'CSE' },
+      { name: 'Electronics & Communication Engineering', code: 'ECE' },
+      { name: 'Mechanical Engineering', code: 'ME' },
+      { name: 'Civil Engineering', code: 'CV' },
+      { name: 'Computer Science & Engineering (AIML)', code: 'CSE-AIML' },
+    ];
+    for (const d of standardDepts) {
+      await Department.findOrCreate({ where: { code: d.code }, defaults: d as any });
+    }
+    const all = await Department.findAll({ order: [['name', 'ASC']] });
+    return res.json({ success: true, message: '5 Core engineering departments verified & seeded', departments: all });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 export default router;
