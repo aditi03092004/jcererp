@@ -210,11 +210,78 @@ export async function uploadFromDisk(
 }
 
 /**
+ * Generates equivalent alternative object keys by normalizing:
+ * 1. Academic year format: YYYY-YYYY <-> YYYY-YY (e.g. 2026-2027 <-> 2026-27)
+ * 2. Department code alias: /CV/ <-> /CE/
+ */
+export function getR2KeyVariants(key: string): string[] {
+  if (!key) return [];
+  const cleanKey = key.replace(/^\/+/, '');
+  const variants = new Set<string>();
+
+  // 1. Year variants: YYYY-YYYY <-> YYYY-YY
+  const fourDigitYear = cleanKey.match(/^(\d{4})-(\d{4})\/(.*)$/);
+  if (fourDigitYear) {
+    const shortYear = `${fourDigitYear[1]}-${fourDigitYear[2].slice(-2)}`;
+    variants.add(`${shortYear}/${fourDigitYear[3]}`);
+  }
+
+  const twoDigitYear = cleanKey.match(/^(\d{4})-(\d{2})\/(.*)$/);
+  if (twoDigitYear) {
+    const longYear = `${twoDigitYear[1]}-20${twoDigitYear[2]}`;
+    variants.add(`${longYear}/${twoDigitYear[3]}`);
+  }
+
+  // 2. Department code variants: /CV/ <-> /CE/
+  for (const v of Array.from(variants).concat(cleanKey)) {
+    if (v.includes('/CV/')) {
+      variants.add(v.replace('/CV/', '/CE/'));
+    } else if (v.includes('/CE/')) {
+      variants.add(v.replace('/CE/', '/CV/'));
+    }
+  }
+
+  variants.delete(cleanKey);
+  return Array.from(variants);
+}
+
+/**
+ * List objects in R2 matching a prefix.
+ */
+export async function listObjects(prefix: string, maxKeys: number = 1000): Promise<AWS.S3.Object[]> {
+  const cleanPrefix = prefix.replace(/^\/+/, '');
+  try {
+    const res = await s3.listObjectsV2({
+      Bucket: BUCKET,
+      Prefix: cleanPrefix,
+      MaxKeys: maxKeys,
+    }).promise();
+    return res.Contents || [];
+  } catch (err: any) {
+    logger.warn(`[R2] listObjects failed for prefix '${cleanPrefix}': ${err.message}`);
+    return [];
+  }
+}
+
+/**
  * Retrieves metadata and headers for an R2 object.
+ * Attempts equivalent key variants if direct key returns 404/NotFound.
  */
 export async function headFile(key: string): Promise<AWS.S3.HeadObjectOutput> {
   const cleanKey = key.replace(/^\/+/, '');
-  return s3.headObject({ Bucket: BUCKET, Key: cleanKey }).promise();
+  try {
+    return await s3.headObject({ Bucket: BUCKET, Key: cleanKey }).promise();
+  } catch (err: any) {
+    const variants = getR2KeyVariants(cleanKey);
+    for (const altKey of variants) {
+      try {
+        return await s3.headObject({ Bucket: BUCKET, Key: altKey }).promise();
+      } catch {
+        // try next variant
+      }
+    }
+    throw err;
+  }
 }
 
 /**
@@ -299,11 +366,25 @@ export function getSignedUrlSync(
 
 /**
  * Fetch file buffer from Cloudflare R2.
+ * Attempts equivalent key variants if direct key is not found.
  */
 export async function getFile(key: string): Promise<Buffer> {
   const cleanKey = key.replace(/^\/+/, '');
-  const data = await s3.getObject({ Bucket: BUCKET, Key: cleanKey }).promise();
-  return data.Body as Buffer;
+  try {
+    const data = await s3.getObject({ Bucket: BUCKET, Key: cleanKey }).promise();
+    return data.Body as Buffer;
+  } catch (err: any) {
+    const variants = getR2KeyVariants(cleanKey);
+    for (const altKey of variants) {
+      try {
+        const data = await s3.getObject({ Bucket: BUCKET, Key: altKey }).promise();
+        return data.Body as Buffer;
+      } catch {
+        // try next variant
+      }
+    }
+    throw err;
+  }
 }
 
 /**

@@ -184,11 +184,11 @@ export const BulkDocumentExportPage: React.FC = () => {
         });
         toast.success('Preview loaded.');
       } else {
-        toast.error('Failed to load preview statistics.');
+        toast.error(res.data?.error || 'Failed to load preview statistics.');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error('Failed to retrieve preview details.');
+      toast.error(err.response?.data?.error || 'Failed to retrieve preview details.');
     } finally {
       setPreviewLoading(false);
     }
@@ -330,8 +330,11 @@ export const BulkDocumentExportPage: React.FC = () => {
               className="w-full h-11 px-3.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-xs font-bold text-neutral-800 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-all disabled:opacity-50"
             >
               <option value="2026-2027">2026-2027</option>
+              <option value="2026-27">2026-27</option>
+              <option value="2025-2026">2025-2026</option>
+              <option value="2025-26">2025-26</option>
               <option value="2027-2028">2027-2028</option>
-              <option value="2028-2029">2028-2029</option>
+              <option value="2027-28">2027-28</option>
             </select>
           </div>
 

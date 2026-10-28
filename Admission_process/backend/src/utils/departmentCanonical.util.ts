@@ -82,11 +82,9 @@ export const resolveDepartmentCanonical = (
   const rawUpper = raw.toUpperCase();
   const rawLower = raw.toLowerCase();
 
-  // 1. Direct UUID match
-  if (isUuidString(raw)) {
-    const byId = departments.find((d) => d.id === raw);
-    if (byId) return byId;
-  }
+  // 1. Direct ID match (by primary key ID or UUID)
+  const byId = departments.find((d) => d.id === raw);
+  if (byId) return byId;
 
   // 2. Direct exact Code match (case-insensitive)
   const byCode = departments.find((d) => d.code.toUpperCase() === rawUpper);

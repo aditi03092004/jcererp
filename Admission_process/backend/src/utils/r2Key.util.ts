@@ -22,6 +22,8 @@
 export function sanitizeStudentName(name: string): string {
   return name
     .replace(/[/\\:*?"<>|]/g, '')   // remove path-unsafe chars
+    .replace(/\.{2,}/g, '')          // remove directory traversal dot-dot sequences
+    .replace(/^\.+|\.+$/g, '')       // remove leading and trailing dots
     .replace(/\s+/g, ' ')            // collapse multiple spaces
     .trim();
 }

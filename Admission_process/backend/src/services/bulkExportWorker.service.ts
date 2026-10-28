@@ -7,16 +7,20 @@ import Admission from '../models/Admission';
 import User from '../models/User';
 import Department from '../models/Department';
 import AdmissionDocument from '../models/AdmissionDocument';
+import AdmissionPersonalDetail from '../models/AdmissionPersonalDetail';
 import Student from '../models/Student';
 import logger from '../utils/logger.util';
 import * as r2 from './r2.service';
 import { StreamingZip, validateZipArchive } from '../utils/zip.util';
+import { normalizeAcademicYear, getAcademicYearVariants } from '../utils/academicYear.util';
+import { findDepartmentCanonical } from '../utils/departmentCanonical.util';
+import { sanitizeStudentName, buildR2Key, buildR2Folder } from '../utils/r2Key.util';
 
 const CONCURRENCY_LIMIT = parseInt(process.env.BULK_EXPORT_CONCURRENCY || '15', 10);
 const MAX_RETRIES = parseInt(process.env.BULK_EXPORT_MAX_RETRIES || '3', 10);
 const RETENTION_HOURS = parseInt(process.env.BULK_EXPORT_RETENTION_HOURS || '24', 10);
 
-const DOCUMENT_FIELD_MAP: Record<string, string> = {
+export const DOCUMENT_FIELD_MAP: Record<string, string> = {
   photo: 'photoUrl',
   signature: 'signatureUrl',
   tenthMarksheet: 'tenthMarksheetUrl',
@@ -29,10 +33,11 @@ const DOCUMENT_FIELD_MAP: Record<string, string> = {
   domicileCertificate: 'domicileCertificateUrl',
   gapCertificate: 'gapCertificateUrl',
   feesPaidReceipt: 'feesPaidReceiptUrl',
+  admissionFeeReceipt: 'admissionFeeReceiptUrl',
   admissionFormFeeReceipt: 'admissionFormFeeReceiptUrl',
 };
 
-const DOCUMENT_LABELS: Record<string, string> = {
+export const DOCUMENT_LABELS: Record<string, string> = {
   photo: 'PassportPhoto',
   signature: 'Signature',
   tenthMarksheet: '10th_Marksheet',
@@ -45,6 +50,7 @@ const DOCUMENT_LABELS: Record<string, string> = {
   domicileCertificate: 'DomicileCertificate',
   gapCertificate: 'GapCertificate',
   feesPaidReceipt: 'CollegeFeeReceipt',
+  admissionFeeReceipt: 'AdmissionFeeReceipt',
   admissionFormFeeReceipt: 'FormFeeReceipt',
 };
 
@@ -53,39 +59,309 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
  * Robust document retrieval helper.
- * Handles both R2 object keys and legacy local disk files with exponential backoff retry.
+ * Handles primary R2 keys, candidate fallback keys, key variants, and legacy local disk files.
  */
-async function fetchDocumentWithRetry(r2Key: string): Promise<Buffer | null> {
+export async function fetchDocumentWithRetry(r2Key: string, fallbackKeys: string[] = []): Promise<Buffer | null> {
   if (!r2Key) return null;
+
+  const candidateKeys = Array.from(new Set([r2Key, ...fallbackKeys])).filter(Boolean);
 
   let attempt = 0;
   while (attempt < MAX_RETRIES) {
     attempt++;
-    try {
-      // 1. If path points to legacy local upload disk
-      if (r2Key.startsWith('/uploads/') || r2Key.startsWith('uploads/')) {
-        const absolutePath = path.join(process.cwd(), r2Key.replace(/^\/+/, ''));
-        if (fs.existsSync(absolutePath)) {
-          const buf = fs.readFileSync(absolutePath);
-          if (buf && buf.length > 0) return buf;
+    for (const keyToTry of candidateKeys) {
+      try {
+        // 1. If path points to legacy local upload disk
+        if (keyToTry.startsWith('/uploads/') || keyToTry.startsWith('uploads/')) {
+          const absolutePath = path.join(process.cwd(), keyToTry.replace(/^\/+/, ''));
+          if (fs.existsSync(absolutePath)) {
+            const buf = fs.readFileSync(absolutePath);
+            if (buf && buf.length > 0) return buf;
+          }
         }
-      }
 
-      // 2. Fetch from Cloudflare R2 (strip leading slash if present for standard S3 object key)
-      const cleanKey = r2Key.replace(/^\/+/, '');
-      const buffer = await r2.getFile(cleanKey);
-      if (buffer && buffer.length > 0) {
-        return buffer;
+        // 2. Fetch from Cloudflare R2 (strip leading slash if present for standard S3 object key)
+        const cleanKey = keyToTry.replace(/^\/+/, '');
+        const buffer = await r2.getFile(cleanKey);
+        if (buffer && buffer.length > 0) {
+          return buffer;
+        }
+      } catch (err: any) {
+        // Try next candidate key
       }
-    } catch (err: any) {
-      logger.warn(`[BulkExport] Document fetch attempt ${attempt}/${MAX_RETRIES} failed for key '${r2Key}': ${err.message}`);
     }
 
     if (attempt < MAX_RETRIES) {
       await delay(Math.pow(2, attempt - 1) * 1000); // 1s, 2s, 4s...
     }
   }
+  logger.warn(`[BulkExport] Document fetch failed after ${MAX_RETRIES} attempts for key '${r2Key}'`);
   return null;
+}
+
+/**
+ * Retrieves eligible admission records for bulk document export.
+ * Normalizes academic year and branch, and applies intended eligibility rules.
+ */
+export async function getEligibleAdmissionsForExport(
+  academicYear: string,
+  branchId?: string | null
+): Promise<Admission[]> {
+  if (!academicYear) {
+    throw new Error('Academic Year is required.');
+  }
+
+  const rawAy = String(academicYear).trim();
+  const canonicalAy = normalizeAcademicYear(rawAy);
+  const ayVariants = Array.from(new Set([
+    rawAy,
+    canonicalAy,
+    ...getAcademicYearVariants(rawAy),
+    ...getAcademicYearVariants(canonicalAy),
+  ])).filter(Boolean);
+
+  const whereClause: any = {
+    academicYear: { [Op.in]: ayVariants },
+    applicationStatus: {
+      [Op.in]: ['APPROVED', 'FEE_RECEIPT_UPLOADED', 'FEE_VERIFIED', 'PRINCIPAL_APPROVED', 'ENROLLED'],
+    },
+  };
+
+  if (branchId && branchId !== 'ALL') {
+    const dept = await findDepartmentCanonical(String(branchId));
+    if (dept) {
+      whereClause.branchId = { [Op.in]: [dept.id, dept.code] };
+    } else {
+      whereClause.branchId = String(branchId);
+    }
+  }
+
+  const admissions = await Admission.findAll({
+    where: whereClause,
+    include: [
+      { model: User, as: 'user', attributes: ['id', 'firstName', 'lastName', 'email'] },
+      { model: Department, as: 'branch' },
+      { model: AdmissionPersonalDetail, as: 'studentpersonaldetails' },
+      { model: AdmissionDocument, as: 'studentdocuments' },
+    ],
+    order: [['applicationNumber', 'ASC']],
+  });
+
+  return admissions;
+}
+
+export interface StudentDocumentItem {
+  studentName: string;
+  applicationNumber: string;
+  studentId: string;
+  documentId: string;
+  entryPath: string;
+  r2Key: string;
+  fallbackKeys: string[];
+  documentTypeLabel: string;
+}
+
+export interface IdentifiedStudentExport {
+  admissionId: string;
+  studentName: string;
+  applicationNumber: string;
+  branchCode: string;
+  folderName: string;
+  status: string;
+  items: StudentDocumentItem[];
+  missingDocuments: string[];
+}
+
+/**
+ * Identifies documents belonging to an eligible student using stored metadata,
+ * central R2 key conventions, and safe fallback prefix resolution.
+ */
+export async function identifyStudentDocuments(
+  adm: Admission,
+  targetAcademicYear: string
+): Promise<IdentifiedStudentExport> {
+  // Resolve student display name
+  let studentName = '';
+  if ((adm as any).studentpersonaldetails) {
+    const p = (adm as any).studentpersonaldetails;
+    studentName = [p.firstName, p.middleName, p.lastName].filter(Boolean).join(' ').trim();
+  }
+  if (!studentName && (adm as any).user) {
+    studentName = `${(adm as any).user.firstName || ''} ${(adm as any).user.lastName || ''}`.trim();
+  }
+  if (!studentName) {
+    studentName = 'Candidate';
+  }
+
+  const appNo = adm.applicationNumber || `TEMP-${adm.id}`;
+  const branchCode = (adm as any).branch?.code || 'CV';
+  const safeStudentName = sanitizeStudentName(studentName);
+  const folderName = `${safeStudentName} - ${appNo}`.replace(/[/\\?%*:|"<>]/g, '_').trim();
+  const canonicalYear = normalizeAcademicYear(targetAcademicYear) || '2026-27';
+  const displayYear = targetAcademicYear || canonicalYear;
+
+  const items: StudentDocumentItem[] = [];
+  const missingDocuments: string[] = [];
+  const seenEntryPaths = new Set<string>();
+
+  // 1. Standard admission documents from AdmissionDocument model & Admission
+  const docs = (adm as any).studentdocuments;
+  for (const field of Object.keys(DOCUMENT_FIELD_MAP)) {
+    const dbKey = DOCUMENT_FIELD_MAP[field];
+    let fileUrl = docs ? (docs.get(dbKey as any) as string | null) : null;
+
+    // Check admissionFeeReceipt on Admission model itself if not in studentdocuments
+    if (!fileUrl && field === 'admissionFeeReceipt' && adm.admissionFeeReceiptUrl) {
+      fileUrl = adm.admissionFeeReceiptUrl;
+    }
+
+    const label = DOCUMENT_LABELS[field] || field;
+
+    if (fileUrl) {
+      const ext = path.extname(fileUrl).toLowerCase() || '.jpg';
+      const cleanLabel = label.replace(/[/\\?%*:|"<>]/g, '_');
+      const entryPath = `${displayYear}/${branchCode}/${folderName}/${cleanLabel}${ext}`;
+
+      // Build candidate fallback keys using central conventions
+      const fallbackKeys: string[] = [
+        buildR2Key({
+          academicYear: canonicalYear,
+          branchCode,
+          studentName,
+          applicationNumber: appNo,
+          mappedDocName: label,
+          ext,
+        }),
+        buildR2Key({
+          academicYear: displayYear,
+          branchCode,
+          studentName,
+          applicationNumber: appNo,
+          mappedDocName: label,
+          ext,
+        }),
+      ];
+
+      if (!seenEntryPaths.has(entryPath)) {
+        seenEntryPaths.add(entryPath);
+        items.push({
+          studentName,
+          applicationNumber: appNo,
+          studentId: adm.userId || adm.id,
+          documentId: (docs && docs.id) || field,
+          entryPath,
+          r2Key: fileUrl,
+          fallbackKeys,
+          documentTypeLabel: label,
+        });
+      }
+    } else {
+      missingDocuments.push(label);
+    }
+  }
+
+  // 2. Provisional admission documents (if student record exists)
+  if (adm.userId) {
+    try {
+      const studentRecord = await Student.findOne({ where: { userId: adm.userId } });
+      if (studentRecord) {
+        const ProvisionalAdmission = (await import('../models/ProvisionalAdmission')).default;
+        const ProvisionalAdmissionDocument = (await import('../models/ProvisionalAdmissionDocument')).default;
+
+        const provApps = await ProvisionalAdmission.findAll({
+          where: { studentId: studentRecord.id },
+          include: [{ model: ProvisionalAdmissionDocument, as: 'documents' }],
+        });
+
+        for (const pApp of provApps) {
+          if (pApp.documents && pApp.documents.length > 0) {
+            for (const pDoc of pApp.documents) {
+              if (pDoc.r2Key) {
+                const ext = path.extname(pDoc.r2Key).toLowerCase() || '.jpg';
+                let docLabel = pDoc.documentType === 'FEE_RECEIPT'
+                  ? 'CollegeFeeReceipt'
+                  : pDoc.documentType === 'SEMESTER_MARKS_CARD'
+                  ? `MarksCard_Sem${pDoc.semesterNumber}`
+                  : (pDoc.originalFileName || 'ProvisionalDoc').replace(/\.[^/.]+$/, '');
+
+                docLabel = docLabel.replace(/[/\\?%*:|"<>]/g, '_');
+
+                const shortYear = canonicalYear;
+                const semFolder = pApp.semester === 3 ? '3rd-semester' : pApp.semester === 5 ? '5th-semester' : '7th-semester';
+                const entryPath = `${displayYear}/${branchCode}/${folderName}/provisional-admission/${shortYear}/${semFolder}/${docLabel}${ext}`;
+
+                if (!seenEntryPaths.has(entryPath)) {
+                  seenEntryPaths.add(entryPath);
+                  items.push({
+                    studentName,
+                    applicationNumber: appNo,
+                    studentId: studentRecord.id,
+                    documentId: pDoc.id,
+                    entryPath,
+                    r2Key: pDoc.r2Key,
+                    fallbackKeys: [],
+                    documentTypeLabel: `Provisional_${docLabel}`,
+                  });
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (err: any) {
+      logger.warn(`[BulkExport] Failed loading provisional doc records for ${studentName}: ${err.message}`);
+    }
+  }
+
+  // 3. Fallback R2 folder scan if student has 0 documents in DB metadata
+  if (items.length === 0) {
+    try {
+      const r2Prefixes = [
+        `${canonicalYear}/${branchCode}/${folderName}/`,
+        `${displayYear}/${branchCode}/${folderName}/`,
+      ];
+      for (const prefix of r2Prefixes) {
+        const objects = await r2.listObjects(prefix, 50);
+        if (objects && objects.length > 0) {
+          for (const obj of objects) {
+            if (obj.Key && obj.Size && obj.Size > 0) {
+              const fileName = path.basename(obj.Key);
+              const ext = path.extname(fileName).toLowerCase() || '.pdf';
+              const baseName = path.basename(fileName, ext);
+              const entryPath = `${displayYear}/${branchCode}/${folderName}/${baseName}${ext}`;
+              if (!seenEntryPaths.has(entryPath)) {
+                seenEntryPaths.add(entryPath);
+                items.push({
+                  studentName,
+                  applicationNumber: appNo,
+                  studentId: adm.userId || adm.id,
+                  documentId: `r2_${fileName}`,
+                  entryPath,
+                  r2Key: obj.Key,
+                  fallbackKeys: [],
+                  documentTypeLabel: baseName,
+                });
+              }
+            }
+          }
+          break; // Found documents under this prefix
+        }
+      }
+    } catch (scanErr: any) {
+      logger.warn(`[BulkExport] Fallback prefix scan skipped for ${folderName}: ${scanErr.message}`);
+    }
+  }
+
+  return {
+    admissionId: adm.id,
+    studentName,
+    applicationNumber: appNo,
+    branchCode,
+    folderName,
+    status: adm.applicationStatus,
+    items,
+    missingDocuments,
+  };
 }
 
 export class BulkExportWorkerService {
@@ -131,22 +407,10 @@ export class BulkExportWorkerService {
         progress: 0,
       });
 
-      const whereClause: any = {
-        academicYear: queuedJob.academicYear,
-        applicationStatus: { [Op.in]: ['APPROVED', 'PRINCIPAL_APPROVED', 'ENROLLED'] },
-      };
-      if (queuedJob.branchId && queuedJob.branchId !== 'ALL') {
-        whereClause.branchId = queuedJob.branchId;
-      }
-
-      const admissions = await Admission.findAll({
-        where: whereClause,
-        include: [
-          { model: User, as: 'user', attributes: ['firstName', 'lastName'] },
-          { model: Department, as: 'branch' },
-          { model: AdmissionDocument, as: 'studentdocuments' },
-        ],
-      });
+      const admissions = await getEligibleAdmissionsForExport(
+        queuedJob.academicYear,
+        queuedJob.branchId
+      );
 
       if (!admissions || admissions.length === 0) {
         await queuedJob.update({
@@ -157,107 +421,14 @@ export class BulkExportWorkerService {
         return;
       }
 
-      // Collect all document items to process with deduplication
-      const itemsToProcess: Array<{
-        studentName: string;
-        applicationNumber: string;
-        studentId: string;
-        documentId: string;
-        entryPath: string;
-        r2Key: string;
-        documentTypeLabel: string;
-      }> = [];
-
-      const seenEntryPaths = new Set<string>();
+      // Collect all document items to process using central identification
+      const itemsToProcess: StudentDocumentItem[] = [];
+      const studentSummaries: IdentifiedStudentExport[] = [];
 
       for (const adm of admissions) {
-        const studentName = adm.user
-          ? `${adm.user.firstName || ''} ${adm.user.lastName || ''}`.trim()
-          : 'Candidate';
-        const appNo = adm.applicationNumber || adm.id;
-        const branchCode = adm.branch ? adm.branch.code : 'GEN';
-        const safeStudentName = studentName.replace(/[/\\?%*:|"<>]/g, '_').trim();
-        const folderName = `${safeStudentName} - ${appNo}`.replace(/[/\\?%*:|"<>]/g, '_');
-
-        // 1. Standard admission documents
-        if (adm.studentdocuments) {
-          for (const field of Object.keys(DOCUMENT_FIELD_MAP)) {
-            const dbKey = DOCUMENT_FIELD_MAP[field];
-            const fileUrl = adm.studentdocuments.get(dbKey as any) as string | null;
-            if (fileUrl) {
-              const ext = path.extname(fileUrl).toLowerCase() || '.jpg';
-              const label = DOCUMENT_LABELS[field] || field;
-              // Universal ZIP Path: [Academic Year]/[Branch]/[Student Name - AppNo]/[DocLabel][ext]
-              const entryPath = `${adm.academicYear}/${branchCode}/${folderName}/${label}${ext}`;
-              
-              if (!seenEntryPaths.has(entryPath)) {
-                seenEntryPaths.add(entryPath);
-                itemsToProcess.push({
-                  studentName,
-                  applicationNumber: appNo,
-                  studentId: adm.userId || adm.id,
-                  documentId: adm.studentdocuments.id || field,
-                  entryPath,
-                  r2Key: fileUrl,
-                  documentTypeLabel: label,
-                });
-              }
-            }
-          }
-        }
-
-        // 2. Provisional admission documents
-        if (adm.userId) {
-          try {
-            const studentRecord = await Student.findOne({ where: { userId: adm.userId } });
-            if (studentRecord) {
-              const ProvisionalAdmission = (await import('../models/ProvisionalAdmission')).default;
-              const ProvisionalAdmissionDocument = (await import('../models/ProvisionalAdmissionDocument')).default;
-
-              const provApps = await ProvisionalAdmission.findAll({
-                where: { studentId: studentRecord.id },
-                include: [{ model: ProvisionalAdmissionDocument, as: 'documents' }],
-              });
-
-              for (const pApp of provApps) {
-                if (pApp.documents && pApp.documents.length > 0) {
-                  for (const pDoc of pApp.documents) {
-                    if (pDoc.r2Key) {
-                      const ext = path.extname(pDoc.r2Key).toLowerCase() || '.jpg';
-                      let docLabel = pDoc.documentType === 'FEE_RECEIPT'
-                        ? 'CollegeFeeReceipt'
-                        : pDoc.documentType === 'SEMESTER_MARKS_CARD'
-                        ? `MarksCard_Sem${pDoc.semesterNumber}`
-                        : (pDoc.originalFileName || 'ProvisionalDoc').replace(/\.[^/.]+$/, '');
-
-                      docLabel = docLabel.replace(/[/\\?%*:|"<>]/g, '_');
-
-                      const yearStr = String(adm.academicYear || '2026-2027');
-                      const shortYear = yearStr.replace(/-20(\d\d)$/, '-$1');
-                      const semFolder = pApp.semester === 3 ? '3rd-semester' : pApp.semester === 5 ? '5th-semester' : '7th-semester';
-                      const entryPath = `${adm.academicYear}/${branchCode}/${folderName}/provisional-admission/${shortYear}/${semFolder}/${docLabel}${ext}`;
-
-                      if (!seenEntryPaths.has(entryPath)) {
-                        seenEntryPaths.add(entryPath);
-                        itemsToProcess.push({
-                          studentName,
-                          applicationNumber: appNo,
-                          studentId: studentRecord.id,
-                          documentId: pDoc.id,
-                          entryPath,
-                          r2Key: pDoc.r2Key,
-                          documentTypeLabel: `Provisional_${docLabel}`,
-                        });
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          } catch (err: any) {
-            logger.warn(`[BulkExport] Failed loading provisional doc records for ${studentName}: ${err.message}`);
-          }
-        }
+        const studentExport = await identifyStudentDocuments(adm, queuedJob.academicYear);
+        studentSummaries.push(studentExport);
+        itemsToProcess.push(...studentExport.items);
       }
 
       const totalDocsCount = itemsToProcess.length;
@@ -288,7 +459,7 @@ export class BulkExportWorkerService {
         const batch = itemsToProcess.slice(i, i + CONCURRENCY_LIMIT);
         const results = await Promise.all(
           batch.map(async (item) => {
-            const buffer = await fetchDocumentWithRetry(item.r2Key);
+            const buffer = await fetchDocumentWithRetry(item.r2Key, item.fallbackKeys);
             return { item, buffer };
           })
         );

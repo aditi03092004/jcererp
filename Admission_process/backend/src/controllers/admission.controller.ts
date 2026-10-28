@@ -29,6 +29,11 @@ import sharp from 'sharp';
 import { StreamingZip } from '../utils/zip.util';
 import { buildR2Key, buildR2Folder, sanitizeStudentName } from '../utils/r2Key.util';
 import { getAcademicYearVariants, normalizeAcademicYear } from '../utils/academicYear.util';
+import {
+  getEligibleAdmissionsForExport,
+  identifyStudentDocuments,
+  fetchDocumentWithRetry,
+} from '../services/bulkExportWorker.service';
 
 export const MAPPED_DOC_NAMES: Record<string, string> = {
   photo: 'Photo',
@@ -3210,71 +3215,41 @@ export const previewBulkExport = async (
 ): Promise<any> => {
   try {
     const { academicYear, branchId } = req.query;
-    if (!academicYear) {
-      return res.status(400).json({ error: 'Academic Year is required.' });
+    if (!academicYear || typeof academicYear !== 'string' || !academicYear.trim()) {
+      return res.status(400).json({ success: false, error: 'Academic Year is required.' });
     }
 
-    const where: any = {
-      academicYear,
-      applicationStatus: { [Op.in]: ['APPROVED', 'PRINCIPAL_APPROVED', 'ENROLLED'] }
-    };
-    if (branchId && branchId !== 'ALL') {
-      where.branchId = branchId;
-    }
+    const admissions = await getEligibleAdmissionsForExport(
+      String(academicYear),
+      branchId ? String(branchId) : undefined
+    );
 
-    const admissions = await Admission.findAll({
-      where,
-      include: [
-        { model: AdmissionDocument, as: 'studentdocuments' }
-      ]
-    });
-
-    let studentCount = admissions.length;
     let documentCount = 0;
+    const eligibleStudents: Array<{
+      id: string;
+      applicationNumber: string;
+      studentName: string;
+      status: string;
+      documentCount: number;
+    }> = [];
 
     for (const adm of admissions) {
-      if (adm.studentdocuments) {
-        for (const field of Object.keys(DOCUMENT_FIELD_MAP)) {
-          const dbKey = DOCUMENT_FIELD_MAP[field];
-          if (adm.studentdocuments.get(dbKey as any)) {
-            documentCount++;
-          }
-        }
-      }
-
-      // Include provisional admission documents for finalized students
-      if (adm.userId) {
-        try {
-          const studentRecord = await Student.findOne({ where: { userId: adm.userId } });
-          if (studentRecord) {
-            const ProvisionalAdmission = (await import('../models/ProvisionalAdmission')).default;
-            const ProvisionalAdmissionDocument = (await import('../models/ProvisionalAdmissionDocument')).default;
-
-            const provApps = await ProvisionalAdmission.findAll({
-              where: { studentId: studentRecord.id },
-              include: [{ model: ProvisionalAdmissionDocument, as: 'documents' }]
-            });
-
-            for (const pApp of provApps) {
-              if (pApp.documents && pApp.documents.length > 0) {
-                for (const pDoc of pApp.documents) {
-                  if (pDoc.r2Key) {
-                    documentCount++;
-                  }
-                }
-              }
-            }
-          }
-        } catch (err) {
-          // Ignore provisional lookup error in preview count
-        }
-      }
+      const studentExport = await identifyStudentDocuments(adm, String(academicYear));
+      documentCount += studentExport.items.length;
+      eligibleStudents.push({
+        id: adm.id,
+        applicationNumber: studentExport.applicationNumber,
+        studentName: studentExport.studentName,
+        status: studentExport.status,
+        documentCount: studentExport.items.length,
+      });
     }
 
     return res.json({
       success: true,
-      studentCount,
-      documentCount
+      studentCount: admissions.length,
+      documentCount,
+      eligibleStudents,
     });
 
   } catch (err) {
@@ -3287,7 +3262,7 @@ export const bulkExportDocuments = async (
 ): Promise<any> => {
   try {
     const { academicYear, branchId } = req.query;
-    if (!academicYear) {
+    if (!academicYear || typeof academicYear !== 'string' || !academicYear.trim()) {
       return res.status(400).json({ error: 'Academic Year is required.' });
     }
 
@@ -3295,163 +3270,55 @@ export const bulkExportDocuments = async (
     req.setTimeout(600000);
     res.setTimeout(600000);
 
-    const where: any = {
-      academicYear,
-      applicationStatus: { [Op.in]: ['APPROVED', 'PRINCIPAL_APPROVED', 'ENROLLED'] }
-    };
-    if (branchId && branchId !== 'ALL') {
-      where.branchId = branchId;
-    }
-
-    const admissions = await Admission.findAll({
-      where,
-      include: [
-        { model: User, as: 'user', attributes: ['firstName', 'lastName'] },
-        { model: Department, as: 'branch' },
-        { model: AdmissionDocument, as: 'studentdocuments' }
-      ]
-    });
+    const admissions = await getEligibleAdmissionsForExport(
+      String(academicYear),
+      branchId ? String(branchId) : undefined
+    );
 
     if (!admissions || admissions.length === 0) {
       return res.status(404).json({ error: 'No finalized students found matching the filters.' });
     }
 
-    const zipFileName = `VTU_Documents_${academicYear}_${branchId}.zip`;
+    const zipFileName = `VTU_Documents_${String(academicYear).replace(/\s+/g, '_')}_${branchId || 'ALL'}.zip`;
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', `attachment; filename="${zipFileName}"`);
 
     const zip = new StreamingZip(res);
     let totalDocumentsAdded = 0;
     
-    // Structure of EXPORT_SUMMARY.txt:
-    // Student Name | Application Number | Department | Missing Documents
     let summaryText = `JCER ERP - ADMISSION DOCUMENTS EXPORT SUMMARY\n`;
     summaryText += `Academic Year: ${academicYear}\n`;
-    summaryText += `Department/Branch Filter: ${branchId}\n`;
+    summaryText += `Department/Branch Filter: ${branchId || 'ALL'}\n`;
     summaryText += `Total Eligible Finalized Students: ${admissions.length}\n`;
     summaryText += `Export Date: ${new Date().toLocaleString('en-IN')}\n`;
     summaryText += `======================================================================\n\n`;
     summaryText += `STUDENTS LOG AND DOCUMENT COVERAGE:\n\n`;
 
     for (const adm of admissions) {
-      const studentName = adm.user 
-        ? `${adm.user.firstName || ''} ${adm.user.lastName || ''}`.trim()
-        : 'Student';
-      const appNum = adm.applicationNumber || `TEMP-${adm.id}`;
-      const branchCode = adm.branch?.code || 'GEN';
-      const safeStudentName = sanitizeStudentName(studentName);
-      const folderName = `${safeStudentName} - ${appNum}`;
-      
-      const missingDocsList: string[] = [];
-      const docs = adm.studentdocuments;
+      const studentExport = await identifyStudentDocuments(adm, String(academicYear));
+      const addedForStudent: string[] = [];
+      const failedForStudent: string[] = [];
 
-      summaryText += `• Student: ${studentName}\n`;
-      summaryText += `  Application Number: ${appNum}\n`;
-      summaryText += `  Branch: ${branchCode}\n`;
-
-      if (!docs) {
-        missingDocsList.push('All Documents (No record found)');
-        summaryText += `  Status: No documents uploaded.\n\n`;
-      } else {
-        const addedForStudent: string[] = [];
-        for (const field of Object.keys(DOCUMENT_FIELD_MAP)) {
-          const dbKey = DOCUMENT_FIELD_MAP[field];
-          const fileUrl = docs.get(dbKey as any) as string | null;
-
-          if (fileUrl) {
-            let fileBuffer: Buffer | null = null;
-            try {
-              if (fileUrl.startsWith('/uploads/') || fileUrl.startsWith('uploads/')) {
-                const absolutePath = path.join(process.cwd(), fileUrl.replace(/^\/+/, ''));
-                if (fs.existsSync(absolutePath)) {
-                  fileBuffer = fs.readFileSync(absolutePath);
-                }
-              } else {
-                fileBuffer = await r2.getFile(fileUrl);
-              }
-
-              if (fileBuffer) {
-                const ext = path.extname(fileUrl).toLowerCase() || '.jpg';
-                const mappedName = MAPPED_DOC_NAMES[field] || field;
-                
-                // Structured ZIP path: [Academic Year]/[Branch]/[Student Name - Application Number]/[Docs]
-                const entryPath = `${academicYear}/${branchCode}/${folderName}/${mappedName}${ext}`;
-                await zip.addFile(entryPath, fileBuffer);
-                totalDocumentsAdded++;
-                addedForStudent.push(mappedName);
-              } else {
-                missingDocsList.push(field);
-              }
-            } catch (err) {
-              logger.error(`Error loading document ${fileUrl} for bulk ZIP:`, err);
-              missingDocsList.push(field);
-            }
-          } else {
-            missingDocsList.push(field);
-          }
+      for (const item of studentExport.items) {
+        const fileBuffer = await fetchDocumentWithRetry(item.r2Key, item.fallbackKeys);
+        if (fileBuffer && fileBuffer.length > 0) {
+          await zip.addFile(item.entryPath, fileBuffer);
+          totalDocumentsAdded++;
+          addedForStudent.push(item.documentTypeLabel);
+        } else {
+          failedForStudent.push(item.documentTypeLabel);
         }
-
-        // Export provisional admission documents (if any)
-        if (adm.userId) {
-          try {
-            const studentRecord = await Student.findOne({ where: { userId: adm.userId } });
-            if (studentRecord) {
-              const ProvisionalAdmission = (await import('../models/ProvisionalAdmission')).default;
-              const ProvisionalAdmissionDocument = (await import('../models/ProvisionalAdmissionDocument')).default;
-
-              const provApps = await ProvisionalAdmission.findAll({
-                where: { studentId: studentRecord.id },
-                include: [{ model: ProvisionalAdmissionDocument, as: 'documents' }]
-              });
-              for (const app of provApps) {
-                if (app.documents && app.documents.length > 0) {
-                  for (const doc of app.documents) {
-                    const fileUrl = doc.r2Key;
-                    if (fileUrl) {
-                      let fileBuffer: Buffer | null = null;
-                      try {
-                        fileBuffer = await r2.getFile(fileUrl);
-                        if (fileBuffer) {
-                          const ext = path.extname(fileUrl).toLowerCase() || '.jpg';
-                          let docLabel = '';
-                          if (doc.documentType === 'FEE_RECEIPT') {
-                            docLabel = 'CollegeFeeReceipt';
-                          } else if (doc.documentType === 'SEMESTER_MARKS_CARD') {
-                            docLabel = `MarksCard_Sem${doc.semesterNumber}`;
-                          } else {
-                            docLabel = doc.originalFileName || 'ProvisionalDoc';
-                          }
-                          docLabel = docLabel.replace(/\.[^/.]+$/, '');
-                          
-                          const yearStr = String(academicYear || '2026-2027');
-                          const shortYear = yearStr.replace(/-20(\d\d)$/, '-$1');
-                          const semFolder = app.semester === 3 ? '3rd-semester' : app.semester === 5 ? '5th-semester' : '7th-semester';
-                          
-                          // ZIP path: [Academic Year]/[Branch]/[Student Name - Application Number]/provisional-admission/[shortYear]/[semFolder]/[docLabel][ext]
-                          const entryPath = `${academicYear}/${branchCode}/${folderName}/provisional-admission/${shortYear}/${semFolder}/${docLabel}${ext}`;
-                          await zip.addFile(entryPath, fileBuffer);
-                          totalDocumentsAdded++;
-                          addedForStudent.push(`Provisional_${semFolder}_${docLabel}`);
-                        }
-                      } catch (err) {
-                        logger.error(`Error loading provisional document ${fileUrl} for bulk ZIP:`, err);
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          } catch (err) {
-            logger.error(`Error loading provisional documents for student ${studentName}:`, err);
-          }
-        }
-
-        summaryText += `  Added Documents: ${addedForStudent.join(', ') || 'None'}\n`;
-        if (missingDocsList.length > 0) {
-          summaryText += `  Missing Documents: ${missingDocsList.join(', ')}\n`;
-        }
-        summaryText += `\n`;
       }
+
+      summaryText += `• Student: ${studentExport.studentName}\n`;
+      summaryText += `  Application Number: ${studentExport.applicationNumber}\n`;
+      summaryText += `  Branch: ${studentExport.branchCode}\n`;
+      summaryText += `  Added Documents: ${addedForStudent.join(', ') || 'None'}\n`;
+      if (studentExport.missingDocuments.length > 0 || failedForStudent.length > 0) {
+        const missingAll = [...studentExport.missingDocuments, ...failedForStudent];
+        summaryText += `  Missing Documents: ${missingAll.join(', ')}\n`;
+      }
+      summaryText += `\n`;
     }
 
     // Add EXPORT_SUMMARY.txt to ZIP
@@ -3480,20 +3347,28 @@ export const startBulkExportJob = async (
 ): Promise<any> => {
   try {
     const { academicYear, branchId } = req.body;
-    if (!academicYear) {
+    if (!academicYear || typeof academicYear !== 'string' || !academicYear.trim()) {
       return res.status(400).json({ success: false, error: 'Academic Year is required.' });
     }
 
     const adminUserId = req.user!.id;
+    const rawAy = String(academicYear).trim();
+    const canonicalAy = normalizeAcademicYear(rawAy);
+    const ayVariants = Array.from(new Set([
+      rawAy,
+      canonicalAy,
+      ...getAcademicYearVariants(rawAy),
+      ...getAcademicYearVariants(canonicalAy),
+    ])).filter(Boolean);
 
-    // Check for an existing QUEUED or PROCESSING job with identical filters
+    // Check for an existing QUEUED or PROCESSING job with matching filters
     const BulkExportJob = (await import('../models/BulkExportJob')).default;
     const bulkExportWorker = (await import('../services/bulkExportWorker.service')).default;
 
     const activeJob = await BulkExportJob.findOne({
       where: {
         createdBy: adminUserId,
-        academicYear,
+        academicYear: { [Op.in]: ayVariants },
         branchId: branchId || 'ALL',
         status: { [Op.in]: ['QUEUED', 'PROCESSING'] }
       }
@@ -3510,7 +3385,7 @@ export const startBulkExportJob = async (
 
     const newJob = await BulkExportJob.create({
       createdBy: adminUserId,
-      academicYear,
+      academicYear: rawAy,
       branchId: branchId || 'ALL',
       status: 'QUEUED',
       progress: 0,
@@ -3524,7 +3399,7 @@ export const startBulkExportJob = async (
       action: 'BULK_EXPORT_JOB_CREATED',
       ipAddress: req.ip || null,
       userAgent: req.headers['user-agent'] || null,
-      details: { jobId: newJob.id, academicYear, branchId }
+      details: { jobId: newJob.id, academicYear: rawAy, branchId }
     });
 
     return res.status(201).json({
@@ -3551,7 +3426,15 @@ export const getActiveBulkExportJob = async (
       createdBy: adminUserId,
     };
     if (academicYear) {
-      baseWhere.academicYear = String(academicYear);
+      const rawAy = String(academicYear).trim();
+      const canonicalAy = normalizeAcademicYear(rawAy);
+      const ayVariants = Array.from(new Set([
+        rawAy,
+        canonicalAy,
+        ...getAcademicYearVariants(rawAy),
+        ...getAcademicYearVariants(canonicalAy),
+      ])).filter(Boolean);
+      baseWhere.academicYear = { [Op.in]: ayVariants };
     }
     if (branchId) {
       baseWhere.branchId = String(branchId);
