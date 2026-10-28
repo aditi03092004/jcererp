@@ -123,7 +123,7 @@ export async function getEligibleAdmissionsForExport(
   const whereClause: any = {
     academicYear: { [Op.in]: ayVariants },
     applicationStatus: {
-      [Op.in]: ['APPROVED', 'FEE_RECEIPT_UPLOADED', 'FEE_VERIFIED', 'PRINCIPAL_APPROVED', 'ENROLLED'],
+      [Op.in]: ['APPROVED', 'PRINCIPAL_APPROVED', 'ENROLLED'],
     },
   };
 

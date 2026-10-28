@@ -287,7 +287,7 @@ export const getPendingAdmissions = async (
 
     const list = await Admission.findAll({
       where: { 
-        applicationStatus: { [Op.in]: ['FEE_VERIFIED', 'APPROVED'] }
+        applicationStatus: 'APPROVED'
       },
       include: [
         { model: User, as: 'user', attributes: ['id', 'email', 'firstName', 'lastName', 'phone', 'profileImage'] },

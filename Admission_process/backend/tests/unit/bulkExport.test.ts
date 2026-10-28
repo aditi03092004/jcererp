@@ -248,10 +248,10 @@ describe('Bulk Document Export - Comprehensive Regression Test Suite (12 Scenari
   });
 
   // --------------------------------------------------------------------------
-  // Scenario 3: Eligible Enrolled and Verified Statuses
+  // Scenario 3: Eligible Enrolled and Verified Statuses (PostgreSQL Enum Safe)
   // --------------------------------------------------------------------------
   describe('Scenario 3: Eligible Enrolled and Verified Statuses', () => {
-    it('should include APPROVED, FEE_RECEIPT_UPLOADED, FEE_VERIFIED, PRINCIPAL_APPROVED, ENROLLED', async () => {
+    it('should include strictly supported statuses: APPROVED, PRINCIPAL_APPROVED, ENROLLED', async () => {
       (Admission.findAll as jest.Mock).mockResolvedValueOnce([]);
 
       await getEligibleAdmissionsForExport('2026-2027');
@@ -259,18 +259,41 @@ describe('Bulk Document Export - Comprehensive Regression Test Suite (12 Scenari
       const callArgs = (Admission.findAll as jest.Mock).mock.calls[0][0];
       const statusCondition = callArgs.where.applicationStatus[Op.in];
 
-      expect(statusCondition).toContain('APPROVED');
-      expect(statusCondition).toContain('FEE_RECEIPT_UPLOADED');
-      expect(statusCondition).toContain('FEE_VERIFIED');
-      expect(statusCondition).toContain('PRINCIPAL_APPROVED');
-      expect(statusCondition).toContain('ENROLLED');
+      expect(statusCondition).toEqual(['APPROVED', 'PRINCIPAL_APPROVED', 'ENROLLED']);
+    });
+
+    it('should only use enum values that exist in the production database schema', async () => {
+      // Production PostgreSQL enum_admissions_applicationStatus values
+      const supportedProductionEnumValues = [
+        'DRAFT',
+        'SUBMITTED',
+        'UNDER_REVIEW',
+        'CORRECTION_REQUIRED',
+        'RESUBMITTED',
+        'APPROVED',
+        'PRINCIPAL_APPROVED',
+        'REJECTED',
+        'ENROLLED',
+        'CANCELLATION_REQUESTED',
+        'CANCELLED',
+      ];
+
+      (Admission.findAll as jest.Mock).mockResolvedValueOnce([]);
+      await getEligibleAdmissionsForExport('2026-2027');
+
+      const callArgs = (Admission.findAll as jest.Mock).mock.calls[0][0];
+      const queriedStatuses: string[] = callArgs.where.applicationStatus[Op.in];
+
+      for (const status of queriedStatuses) {
+        expect(supportedProductionEnumValues).toContain(status);
+      }
     });
   });
 
   // --------------------------------------------------------------------------
-  // Scenario 4: Exclusion of Ineligible Statuses
+  // Scenario 4: Exclusion of Ineligible and Unsupported Statuses
   // --------------------------------------------------------------------------
-  describe('Scenario 4: Exclusion of Ineligible Statuses', () => {
+  describe('Scenario 4: Exclusion of Ineligible and Unsupported Statuses', () => {
     it('should exclude REJECTED, CANCELLED, DRAFT, SUBMITTED, UNDER_REVIEW, CORRECTION_REQUIRED', async () => {
       (Admission.findAll as jest.Mock).mockResolvedValueOnce([]);
 
@@ -285,6 +308,18 @@ describe('Bulk Document Export - Comprehensive Regression Test Suite (12 Scenari
       expect(statusCondition).not.toContain('SUBMITTED');
       expect(statusCondition).not.toContain('UNDER_REVIEW');
       expect(statusCondition).not.toContain('CORRECTION_REQUIRED');
+    });
+
+    it('should never include unsupported enum values like FEE_RECEIPT_UPLOADED or FEE_VERIFIED', async () => {
+      (Admission.findAll as jest.Mock).mockResolvedValueOnce([]);
+
+      await getEligibleAdmissionsForExport('2026-2027');
+
+      const callArgs = (Admission.findAll as jest.Mock).mock.calls[0][0];
+      const statusCondition = callArgs.where.applicationStatus[Op.in];
+
+      expect(statusCondition).not.toContain('FEE_RECEIPT_UPLOADED');
+      expect(statusCondition).not.toContain('FEE_VERIFIED');
     });
   });
 
@@ -326,7 +361,7 @@ describe('Bulk Document Export - Comprehensive Regression Test Suite (12 Scenari
       const mockAdmission = {
         id: 'adm-002',
         applicationNumber: 'JCER-2026-CV-00002',
-        applicationStatus: 'FEE_VERIFIED',
+        applicationStatus: 'ENROLLED',
         branch: { code: 'CV' },
         studentpersonaldetails: { firstName: 'Aditi', lastName: 'Hundre' },
         studentdocuments: {
