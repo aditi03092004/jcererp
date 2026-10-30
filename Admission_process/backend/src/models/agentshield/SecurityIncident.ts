@@ -3,6 +3,7 @@ import sequelize from '../../config/database';
 
 export type IncidentSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type IncidentStatus = 'NEW' | 'INVESTIGATING' | 'MITIGATED' | 'RESOLVED';
+export type IncidentNotificationStatus = 'NONE' | 'PENDING' | 'SENT' | 'FAILED';
 
 export interface InvestigationNote {
   id: string;
@@ -32,6 +33,9 @@ export class SecurityIncident extends Model {
   public resolutionSummary!: string | null;
   public resolvedAt!: Date | null;
   public resolvedBy!: string | null;
+  public notificationStatus!: IncidentNotificationStatus;
+  public notificationSentAt!: Date | null;
+  public notificationFailureReason!: string | null;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }
@@ -124,6 +128,19 @@ SecurityIncident.init(
       type: DataTypes.STRING(128),
       allowNull: true,
     },
+    notificationStatus: {
+      type: DataTypes.ENUM('NONE', 'PENDING', 'SENT', 'FAILED'),
+      allowNull: false,
+      defaultValue: 'NONE',
+    },
+    notificationSentAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    notificationFailureReason: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
   },
   {
     sequelize,
@@ -136,6 +153,7 @@ SecurityIncident.init(
       { fields: ['lastObservedAt'] },
       { fields: ['sourceIdentifier'] },
       { fields: ['incidentNumber'], unique: true },
+      { fields: ['notificationStatus'] },
     ],
   }
 );

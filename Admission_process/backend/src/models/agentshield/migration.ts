@@ -61,12 +61,41 @@ export async function ensureAgentShieldTables(sequelize: Sequelize): Promise<voi
         "resolutionSummary" TEXT NULL,
         "resolvedAt" TIMESTAMP WITH TIME ZONE NULL,
         "resolvedBy" VARCHAR(128) NULL,
+        "notificationStatus" VARCHAR(32) NOT NULL DEFAULT 'NONE',
+        "notificationSentAt" TIMESTAMP WITH TIME ZONE NULL,
+        "notificationFailureReason" TEXT NULL,
         "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
         "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
       );
+      ALTER TABLE "security_incidents" ADD COLUMN IF NOT EXISTS "notificationStatus" VARCHAR(32) NOT NULL DEFAULT 'NONE';
+      ALTER TABLE "security_incidents" ADD COLUMN IF NOT EXISTS "notificationSentAt" TIMESTAMP WITH TIME ZONE NULL;
+      ALTER TABLE "security_incidents" ADD COLUMN IF NOT EXISTS "notificationFailureReason" TEXT NULL;
       CREATE INDEX IF NOT EXISTS "idx_security_incidents_status" ON "security_incidents" ("status");
       CREATE INDEX IF NOT EXISTS "idx_security_incidents_severity" ON "security_incidents" ("severity");
       CREATE INDEX IF NOT EXISTS "idx_security_incidents_last_observed" ON "security_incidents" ("lastObservedAt");
+      CREATE INDEX IF NOT EXISTS "idx_security_incidents_notif_status" ON "security_incidents" ("notificationStatus");
+    `);
+
+    // 2b. Security Incident Notifications (Brevo Alert Tracking & Idempotency)
+    await sequelize.query(`
+      CREATE TABLE IF NOT EXISTS "security_incident_notifications" (
+        "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        "incidentId" UUID NULL REFERENCES "security_incidents"("id") ON DELETE SET NULL,
+        "incidentNumber" VARCHAR(32) NOT NULL,
+        "severity" VARCHAR(32) NOT NULL,
+        "recipients" JSONB NOT NULL DEFAULT '[]'::jsonb,
+        "deliveryStatus" VARCHAR(32) NOT NULL DEFAULT 'PENDING',
+        "attemptCount" INTEGER NOT NULL DEFAULT 0,
+        "lastAttemptAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+        "sentAt" TIMESTAMP WITH TIME ZONE NULL,
+        "failureReason" TEXT NULL,
+        "idempotencyKey" VARCHAR(128) NOT NULL UNIQUE,
+        "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+        "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS "idx_sec_incident_notif_incident" ON "security_incident_notifications" ("incidentId");
+      CREATE INDEX IF NOT EXISTS "idx_sec_incident_notif_status" ON "security_incident_notifications" ("deliveryStatus");
+      CREATE INDEX IF NOT EXISTS "idx_sec_incident_notif_idemp" ON "security_incident_notifications" ("idempotencyKey");
     `);
 
     // 3. Security Events

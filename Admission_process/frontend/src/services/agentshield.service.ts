@@ -46,6 +46,10 @@ export interface SecurityIncidentItem {
   resolutionSummary?: string | null;
   resolvedAt?: string | null;
   resolvedBy?: string | null;
+  notificationStatus?: 'NONE' | 'PENDING' | 'SENT' | 'FAILED';
+  notificationSentAt?: string | null;
+  notificationFailureReason?: string | null;
+  notifications?: any[];
   events?: SecurityEventItem[];
 }
 
@@ -147,6 +151,11 @@ export const agentshieldService = {
 
   async addIncidentNote(id: string, note: string) {
     const res = await API.post(`/agentshield/incidents/${id}/notes`, { note });
+    return res.data;
+  },
+
+  async resendIncidentNotification(id: string) {
+    const res = await API.post(`/agentshield/incidents/${id}/resend-notification`);
     return res.data;
   },
 

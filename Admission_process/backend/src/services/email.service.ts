@@ -641,24 +641,31 @@ class EmailService {
   private async dispatchEmail(
     to: string,
     subject: string,
-    html: string
+    html: string,
+    textContent?: string
   ): Promise<boolean> {
     try {
       if (this.brevoApiKey) {
+        const payload: any = {
+          sender: {
+            name: this.senderName,
+            email: this.senderEmail,
+          },
+
+          to: [{ email: to }],
+
+          subject,
+
+          htmlContent: html,
+        };
+
+        if (textContent) {
+          payload.textContent = textContent;
+        }
+
         const response = await axios.post(
           'https://api.brevo.com/v3/smtp/email',
-          {
-            sender: {
-              name: this.senderName,
-              email: this.senderEmail,
-            },
-
-            to: [{ email: to }],
-
-            subject,
-
-            htmlContent: html,
-          },
+          payload,
           {
             headers: {
               'api-key': this.brevoApiKey,
@@ -682,12 +689,18 @@ class EmailService {
       if (this.transporter) {
         const from = `${this.senderName} <${this.senderEmail}>`;
 
-        const info = await this.transporter.sendMail({
+        const mailOptions: any = {
           from,
           to,
           subject,
           html,
-        });
+        };
+
+        if (textContent) {
+          mailOptions.text = textContent;
+        }
+
+        const info = await this.transporter.sendMail(mailOptions);
 
         logger.info(
           `✅ Nodemailer email sent to ${to} (MessageID: ${info.messageId})`
@@ -1654,6 +1667,19 @@ class EmailService {
       subject,
       html
     );
+  }
+
+  /**
+   * Dispatches AgentShield priority cybersecurity alert email to administrators.
+   * Reuses the existing production Brevo integration without blocking or hardcoded secrets.
+   */
+  public async sendAgentShieldAlertEmail(
+    to: string,
+    subject: string,
+    html: string,
+    textContent?: string
+  ): Promise<boolean> {
+    return this.dispatchEmail(to, subject, html, textContent);
   }
 
   /** Send security advisory notice to the OLD email address */

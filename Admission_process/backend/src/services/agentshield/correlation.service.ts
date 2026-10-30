@@ -152,7 +152,8 @@ export class CorrelationService {
       // Update existing incident
       const currentRank = severityRanks[incident.severity] || 1;
       const newRank = severityRanks[input.severity] || 1;
-      const escalatedSeverity = newRank > currentRank ? input.severity : incident.severity;
+      const isEscalated = newRank > currentRank;
+      const escalatedSeverity = isEscalated ? input.severity : incident.severity;
 
       incident.eventCount += 1;
       incident.lastObservedAt = now;
@@ -161,7 +162,9 @@ export class CorrelationService {
       incident.responseActionTaken = input.responseActionTaken || incident.responseActionTaken;
 
       await incident.save();
-      logger.info(`[AgentShield] Correlated event into existing incident ${incident.incidentNumber} (Event count: ${incident.eventCount})`);
+      logger.info(`[AgentShield] Correlated event into existing incident ${incident.incidentNumber} (Event count: ${incident.eventCount}${isEscalated ? `, escalated to ${escalatedSeverity}` : ''})`);
+      (incident as any).isNew = false;
+      (incident as any).isEscalated = isEscalated;
       return incident;
     }
 
@@ -192,6 +195,8 @@ export class CorrelationService {
       });
 
       logger.warn(`[AgentShield] Created new security incident: ${incidentNumber} (${title}) [${input.severity}]`);
+      (incident as any).isNew = true;
+      (incident as any).isEscalated = false;
       return incident;
     } catch (createErr: any) {
       // Concurrency collision handler: If another request concurrently created an incident for this source/category
@@ -211,16 +216,24 @@ export class CorrelationService {
       });
 
       if (concurrentIncident) {
+        const cRank = severityRanks[concurrentIncident.severity] || 1;
+        const nRank = severityRanks[input.severity] || 1;
+        const isEscalated = nRank > cRank;
+        if (isEscalated) {
+          concurrentIncident.severity = input.severity;
+        }
         concurrentIncident.eventCount += 1;
         concurrentIncident.lastObservedAt = now;
         concurrentIncident.evidenceSummary = `${concurrentIncident.evidenceSummary}\n[${now.toISOString().slice(11, 19)}] ${input.evidenceExplanation}`;
         await concurrentIncident.save();
+        (concurrentIncident as any).isNew = false;
+        (concurrentIncident as any).isEscalated = isEscalated;
         return concurrentIncident;
       }
 
       // If incidentNumber collided with a different source's concurrent incident, retry with timestamp jitter
       const fallbackNumber = `INC-${new Date().getFullYear()}-${String(Date.now() % 10000).padStart(4, '0')}`;
-      return await SecurityIncident.create({
+      const fallbackIncident = await SecurityIncident.create({
         incidentNumber: fallbackNumber,
         title,
         category: input.category,
@@ -239,6 +252,9 @@ export class CorrelationService {
         resolvedAt: null,
         resolvedBy: null,
       });
+      (fallbackIncident as any).isNew = true;
+      (fallbackIncident as any).isEscalated = false;
+      return fallbackIncident;
     }
   }
 

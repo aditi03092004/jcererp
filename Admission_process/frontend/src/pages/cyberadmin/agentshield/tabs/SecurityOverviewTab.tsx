@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../../../store';
 import { Socket } from 'socket.io-client';
 import agentshieldService from '../../../../services/agentshield.service';
 import {
@@ -19,6 +21,7 @@ import {
   Lock,
   FileCode2,
   Sliders,
+  Sparkles,
 } from 'lucide-react';
 
 interface OverviewMetrics {
@@ -36,6 +39,7 @@ interface OverviewMetrics {
 export const SecurityOverviewTab: React.FC<{ onOpenHealthModal: () => void }> = ({ onOpenHealthModal }) => {
   const { socket } = useOutletContext<{ socket: Socket | null; socketConnected: boolean }>() || {};
   const navigate = useNavigate();
+  const { user } = useSelector((state: RootState) => state.auth);
   const [metrics, setMetrics] = useState<OverviewMetrics | null>(null);
   const [recentIncidents, setRecentIncidents] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -143,47 +147,48 @@ export const SecurityOverviewTab: React.FC<{ onOpenHealthModal: () => void }> = 
 
   return (
     <div className="space-y-7 sm:space-y-8">
-      {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-neutral-200/80 dark:border-neutral-800">
-        <div>
-          <div className="flex items-center space-x-3">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-neutral-900 dark:text-white tracking-tight">
-              Security Overview
-            </h1>
-            <div
-              className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-extrabold uppercase border ${
-                isHealthy
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'
-                  : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800'
-              }`}
-              title={isHealthy ? 'Monitoring engine is healthy and actively evaluating request signals' : 'Engine reports degraded health status'}
-            >
-              <span className={`size-2 rounded-full ${isHealthy ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
-              <span>{isHealthy ? 'Engine Healthy' : 'Degraded'}</span>
+      {/* ── Welcome Banner (Dark Shiny Navy Blue Style - Matching Faculty Dashboard) ── */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#070e22] via-[#0c1a40] to-[#0f245c] p-6 sm:p-8 text-white border border-[#1e3a8a]/40 shadow-[0_16px_36px_rgba(7,14,34,0.35)]">
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent pointer-events-none" />
+        <div className="absolute top-0 right-0 -mt-12 -mr-12 w-80 h-80 rounded-full bg-gradient-to-br from-cyan-400/20 via-blue-500/15 to-transparent blur-3xl pointer-events-none" />
+        <div className="absolute -top-16 left-1/4 w-96 h-40 bg-gradient-to-b from-blue-400/15 to-transparent rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-cyan-300 text-xs font-semibold backdrop-blur-md">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Cyber Security Officer • AgentShield SOC</span>
+              <span className="mx-1 opacity-40">•</span>
+              <span className={`inline-flex items-center gap-1.5 ${isHealthy ? 'text-emerald-300' : 'text-amber-300'}`}>
+                <span className={`size-1.5 rounded-full ${isHealthy ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                <span>{isHealthy ? 'Engine Healthy' : 'Degraded'}</span>
+              </span>
             </div>
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+              Welcome, {user?.firstName || 'Cyber Security Officer'} 👋
+            </h2>
+            <p className="text-sm text-blue-100/90 max-w-2xl font-medium">
+              Autonomous Cybersecurity Command Center for <span className="font-bold text-white">JCER ERP</span>. Real-time telemetry, threat detection, and automated defensive mitigation.
+            </p>
           </div>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1 font-medium">
-            Monitor ERP security events, investigate incidents, and review protection activity.
-          </p>
-        </div>
 
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={onOpenHealthModal}
-            className="flex items-center space-x-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 transition shadow-xs cursor-pointer"
-          >
-            <Server className="size-4 text-violet-600 dark:text-violet-400" />
-            <span>Engine Diagnostics</span>
-          </button>
-
-          <button
-            onClick={fetchOverviewData}
-            disabled={refreshing}
-            className="p-2 sm:p-2.5 rounded-xl bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 transition shadow-xs cursor-pointer disabled:opacity-50"
-            title="Refresh Metrics"
-          >
-            <RefreshCw className={`size-4 ${refreshing ? 'animate-spin text-violet-600' : ''}`} />
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={fetchOverviewData}
+              disabled={refreshing}
+              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white font-bold text-xs transition-all backdrop-blur-md cursor-pointer"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+              <span>Refresh Telemetry</span>
+            </button>
+            <button
+              onClick={onOpenHealthModal}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-lg shadow-blue-600/30 transition-all cursor-pointer"
+            >
+              <Server className="w-3.5 h-3.5" />
+              <span>Engine Diagnostics</span>
+            </button>
+          </div>
         </div>
       </div>
 

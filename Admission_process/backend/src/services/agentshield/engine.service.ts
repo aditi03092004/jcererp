@@ -8,6 +8,7 @@ import riskService from './risk.service';
 import correlationService from './correlation.service';
 import responseService from './response.service';
 import realtimeService from './realtime.service';
+import notificationService from './notification.service';
 import logger from '../../utils/logger.util';
 
 export interface SecuritySignal {
@@ -284,6 +285,15 @@ export class AgentShieldEngine {
     // 6. Real-time broadcast to connected SOC CyberAdmins
     realtimeService.broadcastEvent(event.toJSON());
     realtimeService.broadcastIncident(incident.toJSON());
+
+    // 7. Automatic Brevo Email Alert Notification for HIGH & CRITICAL severity incidents
+    const isNewIncident = (incident as any).isNew === true;
+    const isEscalatedIncident = (incident as any).isEscalated === true;
+    if ((isNewIncident || isEscalatedIncident) && (incident.severity === 'CRITICAL' || incident.severity === 'HIGH')) {
+      notificationService.notifyIncidentAlert(incident).catch((err: any) => {
+        logger.error('[AgentShield Engine] Failed to dispatch incident email alert:', err);
+      });
+    }
 
     logger.warn(`[AgentShield Alert] ${rule.name} triggered by ${signal.clientIp} on ${signal.route} [${risk.riskLevel} / Score: ${risk.riskScore}]`);
   }

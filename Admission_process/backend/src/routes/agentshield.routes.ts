@@ -34,6 +34,7 @@ router.get('/incidents', requireCyberAdmin, agentShieldCtrl.getIncidents);
 router.get('/incidents/:id', requireCyberAdmin, agentShieldCtrl.getIncidentById);
 router.patch('/incidents/:id/status', requireCyberAdmin, agentShieldCtrl.updateIncidentStatus);
 router.post('/incidents/:id/notes', requireCyberAdmin, agentShieldCtrl.addIncidentNote);
+router.post('/incidents/:id/resend-notification', requireCyberAdmin, agentShieldCtrl.resendIncidentNotification);
 
 // ── 4. Blocked Requests & Protective Actions ──
 router.get('/blocked-requests', requireCyberAdmin, agentShieldCtrl.getBlockedRequests);

@@ -4,6 +4,7 @@ import DetectionRule from './DetectionRule';
 import SecurityAssessment from './SecurityAssessment';
 import SecurityFinding from './SecurityFinding';
 import SecurityAuditLog from './SecurityAuditLog';
+import SecurityIncidentNotification from './SecurityIncidentNotification';
 
 // Set up associations
 SecurityIncident.hasMany(SecurityEvent, {
@@ -13,6 +14,17 @@ SecurityIncident.hasMany(SecurityEvent, {
 });
 
 SecurityEvent.belongsTo(SecurityIncident, {
+  foreignKey: 'incidentId',
+  as: 'incident',
+});
+
+SecurityIncident.hasMany(SecurityIncidentNotification, {
+  foreignKey: 'incidentId',
+  as: 'notifications',
+  onDelete: 'SET NULL',
+});
+
+SecurityIncidentNotification.belongsTo(SecurityIncident, {
   foreignKey: 'incidentId',
   as: 'incident',
 });
@@ -35,6 +47,7 @@ export {
   SecurityAssessment,
   SecurityFinding,
   SecurityAuditLog,
+  SecurityIncidentNotification,
 };
 
 export default {
@@ -44,4 +57,5 @@ export default {
   SecurityAssessment,
   SecurityFinding,
   SecurityAuditLog,
+  SecurityIncidentNotification,
 };

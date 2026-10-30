@@ -21,6 +21,7 @@ import {
   ArrowRight,
   Shield,
   Layers,
+  Mail,
 } from 'lucide-react';
 
 export const SecurityIncidentsTab: React.FC = () => {
@@ -41,6 +42,8 @@ export const SecurityIncidentsTab: React.FC = () => {
   const [submittingNote, setSubmittingNote] = useState<boolean>(false);
   const [resolutionSummary, setResolutionSummary] = useState<string>('');
   const [updatingStatus, setUpdatingStatus] = useState<boolean>(false);
+  const [resendingEmail, setResendingEmail] = useState<boolean>(false);
+  const [resendNotice, setResendNotice] = useState<string | null>(null);
 
   const fetchIncidents = async () => {
     try {
@@ -184,6 +187,37 @@ export const SecurityIncidentsTab: React.FC = () => {
         return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800';
       default:
         return 'bg-neutral-100 text-neutral-700 border-neutral-200 dark:bg-neutral-800 dark:text-neutral-300';
+    }
+  };
+
+  const getNotificationBadge = (st?: string) => {
+    switch (st) {
+      case 'SENT':
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800';
+      case 'PENDING':
+        return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800';
+      case 'FAILED':
+        return 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800';
+      default:
+        return 'bg-neutral-100 text-neutral-600 border-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:border-neutral-700';
+    }
+  };
+
+  const handleResendNotification = async () => {
+    if (!selectedIncident) return;
+    try {
+      setResendingEmail(true);
+      setResendNotice(null);
+      const res = await agentshieldService.resendIncidentNotification(selectedIncident.id);
+      if (res.success) {
+        setResendNotice('Alert email queued for delivery.');
+        await openIncidentDetail(selectedIncident.id);
+        fetchIncidents();
+      }
+    } catch (err: any) {
+      setResendNotice(err.response?.data?.error || 'Failed to resend alert email.');
+    } finally {
+      setResendingEmail(false);
     }
   };
 
@@ -374,6 +408,7 @@ export const SecurityIncidentsTab: React.FC = () => {
                   <th className="py-3.5 px-4 sm:px-5">Incident ID</th>
                   <th className="py-3.5 px-4">Severity</th>
                   <th className="py-3.5 px-4">Status</th>
+                  <th className="py-3.5 px-4">Alert Email</th>
                   <th className="py-3.5 px-4">Incident Title</th>
                   <th className="py-3.5 px-4">Source Identifier</th>
                   <th className="py-3.5 px-4">Target Resource</th>
@@ -396,6 +431,12 @@ export const SecurityIncidentsTab: React.FC = () => {
                     <td className="py-4 px-4 whitespace-nowrap">
                       <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase border ${getStatusBadge(inc.status)}`}>
                         {inc.status}
+                      </span>
+                    </td>
+                    <td className="py-4 px-4 whitespace-nowrap">
+                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold uppercase border inline-flex items-center space-x-1 ${getNotificationBadge(inc.notificationStatus)}`}>
+                        <Mail className="size-3" />
+                        <span>{inc.notificationStatus === 'SENT' ? 'Sent' : inc.notificationStatus === 'PENDING' ? 'Queued' : inc.notificationStatus === 'FAILED' ? 'Failed' : 'None'}</span>
                       </span>
                     </td>
                     <td className="py-4 px-4 font-bold text-neutral-900 dark:text-white max-w-sm truncate" title={inc.title}>
@@ -495,6 +536,58 @@ export const SecurityIncidentsTab: React.FC = () => {
                       placeholder="Describe corrective actions or findings..."
                       className="w-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-3 text-neutral-800 dark:text-neutral-200 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 shadow-xs"
                     />
+                  </div>
+                )}
+              </div>
+
+              {/* Automated Brevo Email Alert Telemetry */}
+              <div className="p-4 sm:p-5 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-700/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Mail className="size-4 text-violet-600 dark:text-violet-400" />
+                    <span className="text-xs uppercase font-extrabold text-neutral-700 dark:text-neutral-300 tracking-wider">
+                      Automated Brevo Security Alert
+                    </span>
+                  </div>
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase border ${getNotificationBadge(selectedIncident.notificationStatus)}`}>
+                    {selectedIncident.notificationStatus || 'NONE'}
+                  </span>
+                </div>
+
+                <div className="text-xs text-neutral-600 dark:text-neutral-400 space-y-1">
+                  {selectedIncident.notificationSentAt && (
+                    <div>
+                      <strong className="text-neutral-800 dark:text-neutral-200">Dispatched:</strong>{' '}
+                      {new Date(selectedIncident.notificationSentAt).toLocaleString()}
+                    </div>
+                  )}
+                  {selectedIncident.notificationFailureReason && (
+                    <div className="text-rose-600 dark:text-rose-400 font-medium">
+                      <strong>Delivery Notice:</strong> {selectedIncident.notificationFailureReason}
+                    </div>
+                  )}
+                  {selectedIncident.severity !== 'CRITICAL' && selectedIncident.severity !== 'HIGH' && (
+                    <div className="text-neutral-500 italic">
+                      Automatic email alerts are strictly routed for HIGH and CRITICAL severity threats to prevent alert fatigue.
+                    </div>
+                  )}
+                </div>
+
+                {(selectedIncident.severity === 'CRITICAL' || selectedIncident.severity === 'HIGH') && (
+                  <div className="flex items-center space-x-3 pt-1">
+                    <button
+                      onClick={handleResendNotification}
+                      disabled={resendingEmail}
+                      className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer disabled:opacity-50 shadow-xs"
+                    >
+                      <Mail className={`size-3.5 ${resendingEmail ? 'animate-pulse text-violet-600' : ''}`} />
+                      <span>{resendingEmail ? 'Dispatching...' : 'Resend Alert Email'}</span>
+                    </button>
+                    {resendNotice && (
+                      <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 animate-in fade-in">
+                        {resendNotice}
+                      </span>
+                    )}
                   </div>
                 )}
               </div>

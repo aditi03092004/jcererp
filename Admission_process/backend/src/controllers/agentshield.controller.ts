@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { Op } from 'sequelize';
 import SecurityEvent from '../models/agentshield/SecurityEvent';
 import SecurityIncident, { IncidentStatus, IncidentSeverity } from '../models/agentshield/SecurityIncident';
+import SecurityIncidentNotification from '../models/agentshield/SecurityIncidentNotification';
 import DetectionRule from '../models/agentshield/DetectionRule';
 import SecurityAssessment from '../models/agentshield/SecurityAssessment';
 import SecurityFinding from '../models/agentshield/SecurityFinding';
@@ -10,6 +11,7 @@ import agentShieldEngine from '../services/agentshield/engine.service';
 import rulesService from '../services/agentshield/rules.service';
 import responseService from '../services/agentshield/response.service';
 import zapParserService from '../services/agentshield/zapParser.service';
+import notificationService from '../services/agentshield/notification.service';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 
 /**
@@ -125,6 +127,12 @@ export const getIncidentById = async (req: AuthenticatedRequest, res: Response, 
           limit: 50,
           order: [['timestamp', 'DESC']],
         },
+        {
+          model: SecurityIncidentNotification,
+          as: 'notifications',
+          limit: 10,
+          order: [['createdAt', 'DESC']],
+        },
       ],
     });
 
@@ -233,6 +241,50 @@ export const addIncidentNote = async (req: AuthenticatedRequest, res: Response, 
     }).catch(() => {});
 
     return res.status(201).json({ success: true, data: noteObj, incident });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+/**
+ * 6b. Manually Trigger Resending Alert Email for an Incident
+ */
+export const resendIncidentNotification = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<any> => {
+  try {
+    const { id } = req.params;
+    const incident = await SecurityIncident.findByPk(id);
+
+    if (!incident) {
+      return res.status(404).json({ success: false, error: 'Security incident not found.' });
+    }
+
+    if (incident.severity !== 'CRITICAL' && incident.severity !== 'HIGH') {
+      return res.status(400).json({
+        success: false,
+        error: 'Email notifications are only supported for HIGH and CRITICAL severity incidents.',
+      });
+    }
+
+    await notificationService.notifyIncidentAlert(incident, true);
+
+    await SecurityAuditLog.create({
+      actorId: req.user!.id,
+      actorEmail: req.user!.email || 'cyberadmin@jcer.edu',
+      action: 'RESEND_INCIDENT_NOTIFICATION',
+      targetType: 'INCIDENT',
+      targetId: incident.id,
+      previousState: null,
+      newState: { notificationStatus: incident.notificationStatus },
+      ipAddress: req.ip || null,
+      timestamp: new Date(),
+      details: { incidentNumber: incident.incidentNumber, severity: incident.severity },
+    }).catch(() => {});
+
+    return res.json({
+      success: true,
+      message: `Alert email notification queued for incident ${incident.incidentNumber}.`,
+      data: incident,
+    });
   } catch (err) {
     return next(err);
   }
