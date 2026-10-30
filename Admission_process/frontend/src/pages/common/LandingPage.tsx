@@ -17,6 +17,7 @@ import {
   Sun,
   Moon,
   ShieldCheck,
+  ShieldAlert,
   Globe,
   ChevronRight,
   BookOpenCheck,
@@ -110,6 +111,11 @@ export const LandingPage: React.FC = () => {
 
   const handleErpNavigation = () => {
     navigate('/login');
+  };
+
+  const handleSignalSafeNavigation = () => {
+    const signalSafeUrl = import.meta.env.VITE_SIGNALSAFE_URL || 'http://localhost:5174';
+    window.location.href = signalSafeUrl;
   };
 
   // ── Maintenance Mode Layout ──
@@ -309,9 +315,20 @@ export const LandingPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleSignalSafeNavigation}
+              id="header-signalsafe-btn"
+              className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold border border-emerald-500/50 dark:border-emerald-500/40 text-emerald-700 dark:text-emerald-300 bg-emerald-50/90 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-all duration-200 shadow-sm cursor-pointer"
+              title="Campus Cybersecurity and Threat Detection"
+            >
+              <ShieldAlert className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              SignalSafe Campus
+            </button>
+
             <button
               onClick={handleErpNavigation}
+              id="header-erp-btn"
               className="hidden sm:flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold border border-[#0F4C81]/80 dark:border-slate-700 text-[#0F4C81] dark:text-slate-200 bg-white/90 dark:bg-slate-900/90 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-200 shadow-sm cursor-pointer"
             >
               ERP Portal <ArrowRight className="w-3.5 h-3.5 text-current" />
@@ -411,17 +428,97 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Secondary ERP Link */}
-        <div className="mt-8 flex flex-col items-center space-y-2.5 z-10">
-          <p className="text-xs sm:text-sm font-medium" style={{ color: isDark ? '#94A3B8' : '#64748B' }}>
-            Need access to the College ERP?
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/* CAMPUS DIGITAL GATEWAYS SECTION                                */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        <div className="w-full max-w-4xl mt-10 z-10 animate-fadeInUp" style={{ animationDelay: '1.2s' }}>
+          <div className="text-center mb-6">
+            <h4 className="text-xs uppercase tracking-widest font-black text-slate-400 dark:text-slate-500">
+              Campus Digital Gateways
+            </h4>
+            <p className="text-sm font-semibold text-slate-600 dark:text-slate-350 mt-1">
+              Select a portal to access JCER institutional services and cybersecurity systems
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
+            {/* Card 1: Existing ERP Portal */}
+            <div className="feature-glass rounded-[24px] p-6 sm:p-7 flex flex-col justify-between border border-slate-200/80 dark:border-slate-800 shadow-md hover:shadow-xl transition-all duration-300 group">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900/50 flex items-center justify-center text-[#0F4C81] dark:text-blue-400">
+                    <BookOpenCheck className="w-6 h-6" />
+                  </div>
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-[#0F4C81] dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60">
+                    Institutional ERP
+                  </span>
+                </div>
+                <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white mb-1">
+                  ERP Portal
+                </h3>
+                <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 mb-2">
+                  Academic & Administrative System
+                </p>
+                <p className="text-xs text-slate-600 dark:text-slate-400 font-medium leading-relaxed mb-6">
+                  Access student records, class attendance rosters, grade cards, faculty workflows, and administrative management.
+                </p>
+              </div>
+
+              <button
+                onClick={handleErpNavigation}
+                id="gateway-erp-portal-btn"
+                className="w-full flex items-center justify-center gap-2 py-3 px-5 rounded-xl font-bold text-xs sm:text-sm text-white bg-[#0F4C81] hover:bg-[#155e9e] transition-all duration-200 shadow-md cursor-pointer group-hover:translate-x-0.5"
+              >
+                ERP Portal <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+              </button>
+            </div>
+
+            {/* Card 2: New SignalSafe Campus */}
+            <div className="feature-glass rounded-[24px] p-6 sm:p-7 flex flex-col justify-between border border-emerald-200/80 dark:border-emerald-800/60 shadow-md hover:shadow-xl transition-all duration-300 group relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 dark:bg-emerald-500/15 rounded-full blur-2xl pointer-events-none" />
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                    <ShieldAlert className="w-6 h-6" />
+                  </div>
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
+                    KAVACH Threat Shield
+                  </span>
+                </div>
+                <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white mb-1">
+                  SignalSafe Campus
+                </h3>
+                <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mb-2">
+                  Campus Cybersecurity and Threat Detection
+                </p>
+                <p className="text-xs text-slate-600 dark:text-slate-400 font-medium leading-relaxed mb-6">
+                  Analyze suspicious messages, websites and QR codes, and report potential cybersecurity incidents.
+                </p>
+              </div>
+
+              <button
+                onClick={handleSignalSafeNavigation}
+                id="gateway-signalsafe-btn"
+                className="w-full flex items-center justify-center gap-2 py-3 px-5 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 transition-all duration-200 shadow-md cursor-pointer group-hover:translate-x-0.5"
+              >
+                <ShieldAlert className="w-4 h-4" />
+                SignalSafe Campus <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Link Footer Assistance */}
+        <div className="mt-8 flex flex-col items-center space-y-2 z-10">
+          <p className="text-xs font-medium" style={{ color: isDark ? '#94A3B8' : '#64748B' }}>
+            Looking for institutional login?
           </p>
           <button
             onClick={handleErpNavigation}
             className="flex items-center gap-1.5 text-xs sm:text-sm font-extrabold hover:text-[#2563EB] dark:hover:text-blue-300 transition-colors focus:outline-none uppercase tracking-wider cursor-pointer bg-transparent border-none"
             style={{ color: isDark ? '#60A5FA' : '#0F4C81' }}
           >
-            ERP Portal <ArrowRight className="w-3.5 h-3.5" />
+            ERP Portal Login <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
       </main>

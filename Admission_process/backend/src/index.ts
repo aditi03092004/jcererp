@@ -793,9 +793,10 @@ async function startServer() {
       console.warn('Bulk export worker retention cleanup init notice:', err.message);
     }
 
-    // Pre-cast: HOD Academic Dashboard schema extensions
+    // Pre-cast: HOD Academic Dashboard schema extensions & CyberAdmin role
     try {
       await sequelize.query(`ALTER TYPE "enum_users_status" ADD VALUE IF NOT EXISTS 'PENDING_AUTHORIZATION';`).catch(() => {});
+      await sequelize.query(`ALTER TYPE "enum_users_role" ADD VALUE IF NOT EXISTS 'CYBERADMIN';`).catch(() => {});
       await sequelize.query(`
         DO $$
         BEGIN
@@ -1727,6 +1728,31 @@ async function startServer() {
           mustChangePassword: false,
         });
         console.log(`✓ Principal account initialized: ${principalEmail}`);
+      }
+
+      // 4. Ensure CyberAdmin (SignalSafe Campus integration)
+      const cyberAdminEmail = process.env.INITIAL_CYBERADMIN_EMAIL
+        ? process.env.INITIAL_CYBERADMIN_EMAIL.trim().toLowerCase()
+        : null;
+      const cyberAdminPass = process.env.INITIAL_CYBERADMIN_PASSWORD;
+
+      if (cyberAdminEmail && cyberAdminPass) {
+        const existingCyberAdmin = await User.findOne({ where: { email: cyberAdminEmail } });
+        if (!existingCyberAdmin) {
+          const cyberAdminHash = await bcrypt.hash(cyberAdminPass, 10);
+          await User.create({
+            username: cyberAdminEmail,
+            email: cyberAdminEmail,
+            passwordHash: cyberAdminHash,
+            role: 'CYBERADMIN',
+            status: 'ACTIVE',
+            firstName: 'Cyber',
+            lastName: 'Security Officer',
+            phone: '9876543202',
+            mustChangePassword: false,
+          });
+          console.log(`✓ CyberAdmin account initialized: ${cyberAdminEmail}`);
+        }
       }
     } catch (accErr: any) {
       console.warn('⚠️ Privileged accounts bootstrap notice:', accErr.message);

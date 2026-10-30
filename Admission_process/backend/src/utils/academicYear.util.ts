@@ -79,32 +79,74 @@ export function areAcademicYearsEqual(
 
 export function getAcademicYearVariants(ay?: string | null): string[] {
   if (!ay || ay === 'ALL') return [];
-  const clean = ay.trim().replace(/[\u2010-\u2015\u2212]/g, '-');
+  const trimmed = ay.trim();
+  // Strip optional "AY:" or "AY" prefix for base parsing
+  const stripped = trimmed.replace(/^AY\s*:?\s*/i, '').trim();
+  const clean = stripped.replace(/[\u2010-\u2015\u2212]/g, '-');
   
-  const variants = new Set<string>([ay, clean]);
+  const variants = new Set<string>([ay, trimmed, stripped, clean]);
   
   // Format: "YYYY-YY" e.g. "2026-27"
-  const match2 = clean.match(/^(\d{4})-(\d{2})$/);
+  const match2 = clean.match(/^(\d{4})[-\/\s]+(\d{2})$/);
   if (match2) {
     const startYear = match2[1];
+    const endShort = match2[2];
     const endCentury = startYear.slice(0, 2);
-    const fullEndYear = `${endCentury}${match2[2]}`;
+    const fullEndYear = `${endCentury}${endShort}`;
+    
+    // Core representations
+    variants.add(`${startYear}-${endShort}`);
     variants.add(`${startYear}-${fullEndYear}`);
-    variants.add(`${startYear}\u2013${match2[2]}`);
+    variants.add(`${startYear}\u2013${endShort}`);
     variants.add(`${startYear}\u2013${fullEndYear}`);
+    variants.add(`${startYear}\u2014${endShort}`);
+    variants.add(`${startYear}\u2014${fullEndYear}`);
+    variants.add(`${startYear}/${endShort}`);
+    variants.add(`${startYear}/${fullEndYear}`);
+    variants.add(`${startYear} - ${endShort}`);
+    variants.add(`${startYear} - ${fullEndYear}`);
+    variants.add(`${startYear} \u2013 ${endShort}`);
+    variants.add(`${startYear} \u2013 ${fullEndYear}`);
+
+    // With AY prefix
+    variants.add(`AY ${startYear}-${endShort}`);
+    variants.add(`AY ${startYear}-${fullEndYear}`);
+    variants.add(`AY ${startYear}\u2013${endShort}`);
+    variants.add(`AY ${startYear}\u2013${fullEndYear}`);
+    variants.add(`AY: ${startYear}-${endShort}`);
+    variants.add(`AY: ${startYear}-${fullEndYear}`);
   }
   
   // Format: "YYYY-YYYY" e.g. "2026-2027"
-  const match4 = clean.match(/^(\d{4})-(\d{4})$/);
+  const match4 = clean.match(/^(\d{4})[-\/\s]+(\d{4})$/);
   if (match4) {
     const startYear = match4[1];
-    const endShort = match4[2].slice(2);
+    const fullEndYear = match4[2];
+    const endShort = fullEndYear.slice(2);
+
     variants.add(`${startYear}-${endShort}`);
-    variants.add(`${startYear}\u2013${match4[2]}`);
+    variants.add(`${startYear}-${fullEndYear}`);
     variants.add(`${startYear}\u2013${endShort}`);
+    variants.add(`${startYear}\u2013${fullEndYear}`);
+    variants.add(`${startYear}\u2014${endShort}`);
+    variants.add(`${startYear}\u2014${fullEndYear}`);
+    variants.add(`${startYear}/${endShort}`);
+    variants.add(`${startYear}/${fullEndYear}`);
+    variants.add(`${startYear} - ${endShort}`);
+    variants.add(`${startYear} - ${fullEndYear}`);
+    variants.add(`${startYear} \u2013 ${endShort}`);
+    variants.add(`${startYear} \u2013 ${fullEndYear}`);
+
+    // With AY prefix
+    variants.add(`AY ${startYear}-${endShort}`);
+    variants.add(`AY ${startYear}-${fullEndYear}`);
+    variants.add(`AY ${startYear}\u2013${endShort}`);
+    variants.add(`AY ${startYear}\u2013${fullEndYear}`);
+    variants.add(`AY: ${startYear}-${endShort}`);
+    variants.add(`AY: ${startYear}-${fullEndYear}`);
   }
 
-  return Array.from(variants);
+  return Array.from(variants).filter(Boolean);
 }
 
 export default {

@@ -203,6 +203,29 @@ export async function seed(exitOnComplete = false) {
       },
     });
 
+    // CyberAdmin (SignalSafe Campus integration)
+    const cyberAdminEmail = (process.env.INITIAL_CYBERADMIN_EMAIL || '').trim().toLowerCase();
+    const cyberAdminPass = process.env.INITIAL_CYBERADMIN_PASSWORD;
+    if (cyberAdminEmail && cyberAdminPass) {
+      const cyberAdminHash = await bcrypt.hash(cyberAdminPass, 10);
+      await User.findOrCreate({
+        where: { email: cyberAdminEmail },
+        defaults: {
+          username: cyberAdminEmail,
+          email: cyberAdminEmail,
+          passwordHash: cyberAdminHash,
+          role: 'CYBERADMIN',
+          status: 'ACTIVE',
+          firstName: 'Cyber',
+          lastName: 'Security Officer',
+          phone: '9876543202',
+          profileImage: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=200&fit=crop',
+          mustChangePassword: false,
+        },
+      });
+      console.log(`✓ CyberAdmin user seeded: ${cyberAdminEmail}`);
+    }
+
     // HOD User
     const [hodUser] = await User.findOrCreate({
       where: { email: 'hod@college.com' },

@@ -165,6 +165,8 @@ const Register = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        if (loading) return;
+
         if (!isEmailVerified) {
             toast.error('Please verify your email address via OTP before creating your account.');
             return;

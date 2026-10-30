@@ -53,6 +53,18 @@ export const errorHandler = (
       return;
     }
 
+    if (err.name === 'SequelizeValidationError') {
+      const validationMsg = err.errors?.[0]?.message || 'Validation failed for one or more fields.';
+      res.status(400).json({
+        success: false,
+        errorCode: 'VALIDATION_ERROR',
+        error: validationMsg,
+        message: validationMsg,
+        referenceId: correlationId,
+      });
+      return;
+    }
+
     errorResponse = {
       success: false,
       errorCode: 'DATABASE_ERROR',

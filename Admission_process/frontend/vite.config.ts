@@ -8,11 +8,13 @@ export default defineConfig(({ mode }) => {
   const backendTarget = env.VITE_BACKEND_TARGET || process.env.VITE_BACKEND_TARGET || 'http://localhost:5000';
   const apiUrl = env.VITE_API_URL || process.env.VITE_API_URL || '/api';
   const socketUrl = env.VITE_SOCKET_URL || process.env.VITE_SOCKET_URL || 'http://localhost:5000';
+  const signalSafeUrl = env.VITE_SIGNALSAFE_URL || process.env.VITE_SIGNALSAFE_URL || 'http://localhost:5174';
 
   return {
     define: {
       'import.meta.env.VITE_API_URL': JSON.stringify(apiUrl),
       'import.meta.env.VITE_SOCKET_URL': JSON.stringify(socketUrl),
+      'import.meta.env.VITE_SIGNALSAFE_URL': JSON.stringify(signalSafeUrl),
     },
     plugins: [
       react(),

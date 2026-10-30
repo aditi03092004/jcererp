@@ -14,7 +14,7 @@ class User extends Model {
   public username!: string;
   public email!: string;
   public passwordHash!: string;
-  public role!: 'SUPER_ADMIN' | 'ADMIN' | 'HOD' | 'TEACHER' | 'STUDENT' | 'PARENT' | 'PRINCIPAL' | 'DEAN';
+  public role!: 'SUPER_ADMIN' | 'ADMIN' | 'HOD' | 'TEACHER' | 'STUDENT' | 'PARENT' | 'PRINCIPAL' | 'DEAN' | 'CYBERADMIN';
   public status!: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'PENDING_AUTHORIZATION';
   public firstName!: string;
   public middleName!: string | null;
@@ -93,7 +93,7 @@ User.init(
       allowNull: false,
     },
     role: {
-      type: DataTypes.ENUM('SUPER_ADMIN', 'ADMIN', 'HOD', 'TEACHER', 'STUDENT', 'PARENT', 'PRINCIPAL', 'DEAN'),
+      type: DataTypes.ENUM('SUPER_ADMIN', 'ADMIN', 'HOD', 'TEACHER', 'STUDENT', 'PARENT', 'PRINCIPAL', 'DEAN', 'CYBERADMIN'),
       allowNull: false,
     },
     status: {

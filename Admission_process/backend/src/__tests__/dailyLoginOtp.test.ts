@@ -244,9 +244,10 @@ describe('JCER ERP Daily OTP Authentication Suite', () => {
       expect(authController.isDailyOtpRequiredRole('FACULTY')).toBe(true);
     });
 
-    it('should NOT require daily OTP for STUDENT or PARENT', () => {
+    it('should NOT require daily OTP for STUDENT, PARENT, or CYBERADMIN', () => {
       expect(authController.isDailyOtpRequiredRole('STUDENT')).toBe(false);
       expect(authController.isDailyOtpRequiredRole('PARENT')).toBe(false);
+      expect(authController.isDailyOtpRequiredRole('CYBERADMIN')).toBe(false);
     });
   });
 

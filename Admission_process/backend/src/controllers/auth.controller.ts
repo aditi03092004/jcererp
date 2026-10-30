@@ -38,46 +38,74 @@ const getUserPayload = async (user: User) => {
     : 'ERP';
 
   let department: { id: string; name: string; code: string } | undefined = undefined;
-  if (user.role === 'HOD') {
-    const hod = await HOD.findOne({
-      where: { userId: user.id, isActive: true },
-      include: [{ model: Department, as: 'department', attributes: ['id', 'name', 'code'] }],
-    });
-    if (hod && (hod as any).department) {
-      department = {
-        id: (hod as any).department.id,
-        name: (hod as any).department.name,
-        code: (hod as any).department.code,
-      };
-    }
-  } else if (user.role === 'TEACHER') {
-    const teacher = await Teacher.findOne({
-      where: { userId: user.id },
-      include: [{ model: Department, as: 'department', attributes: ['id', 'name', 'code'] }],
-    });
-    if (teacher && (teacher as any).department) {
-      department = {
-        id: (teacher as any).department.id,
-        name: (teacher as any).department.name,
-        code: (teacher as any).department.code,
-      };
-    }
-  }
-
-  const isHod = user.role === 'HOD' || (await HOD.findOne({ where: { userId: user.id, isActive: true } })) !== null;
-  const isTeacher = user.role === 'TEACHER' || (user.role as string) === 'FACULTY';
-  const isDean = user.role === 'DEAN';
-  const isPrincipal = user.role === 'PRINCIPAL';
-  const hasFacultyAssignment = (await FacultyAssignment.count({ where: { userId: user.id, status: 'ACTIVE' } })) > 0;
-  const teacherProfile = await Teacher.findOne({ where: { userId: user.id, status: 'ACTIVE' } });
-  const isTeachingConfigured = teacherProfile !== null && !!teacherProfile.departmentId;
-  const isFaculty = isTeacher || isHod || isDean || isPrincipal || hasFacultyAssignment || isTeachingConfigured;
-
+  let isHod = false;
+  let isTeacher = false;
+  let isDean = false;
+  let isPrincipal = false;
+  let isFaculty = false;
   const workspaces: string[] = [];
-  if (isHod) workspaces.push('hod');
-  if (isDean) workspaces.push('dean');
-  if (isPrincipal) workspaces.push('principal');
-  if (isFaculty) workspaces.push('faculty');
+
+  // Non-student roles: resolve faculty, departmental, and administrative capabilities
+  if (user.role !== 'STUDENT') {
+    if (user.role === 'HOD') {
+      const hod = await HOD.findOne({
+        where: { userId: user.id, isActive: true },
+        include: [{ model: Department, as: 'department', attributes: ['id', 'name', 'code'] }],
+      });
+      if (hod && (hod as any).department) {
+        department = {
+          id: (hod as any).department.id,
+          name: (hod as any).department.name,
+          code: (hod as any).department.code,
+        };
+      }
+    } else if (user.role === 'TEACHER' || (user.role as string) === 'FACULTY') {
+      const teacher = await Teacher.findOne({
+        where: { [Op.or]: [{ userId: user.id }, { id: user.id }] },
+        include: [{ model: Department, as: 'department', attributes: ['id', 'name', 'code'] }],
+      });
+      if (teacher && (teacher as any).department) {
+        department = {
+          id: (teacher as any).department.id,
+          name: (teacher as any).department.name,
+          code: (teacher as any).department.code,
+        };
+      }
+    }
+
+    isHod = user.role === 'HOD' || (await HOD.findOne({ where: { userId: user.id, isActive: true } })) !== null;
+    isTeacher = user.role === 'TEACHER' || (user.role as string) === 'FACULTY';
+    isDean = user.role === 'DEAN';
+    isPrincipal = user.role === 'PRINCIPAL';
+    const teacherProfile = await Teacher.findOne({
+      where: {
+        [Op.or]: [{ userId: user.id }, { id: user.id }],
+        status: 'ACTIVE',
+      },
+    });
+    const teacherCandidateIds = Array.from(new Set([user.id, teacherProfile?.id, teacherProfile?.userId].filter(Boolean) as string[]));
+    const hasFacultyAssignment = (await FacultyAssignment.count({
+      where: {
+        [Op.or]: [
+          { userId: { [Op.in]: teacherCandidateIds } },
+          { teacherId: { [Op.in]: teacherCandidateIds } },
+        ],
+        status: {
+          [Op.or]: [
+            { [Op.in]: ['ACTIVE'] },
+            { [Op.is]: null },
+          ],
+        },
+      },
+    })) > 0;
+    const isTeachingConfigured = teacherProfile !== null && !!teacherProfile.departmentId;
+    isFaculty = isTeacher || isHod || isDean || isPrincipal || hasFacultyAssignment || isTeachingConfigured;
+
+    if (isHod) workspaces.push('hod');
+    if (isDean) workspaces.push('dean');
+    if (isPrincipal) workspaces.push('principal');
+    if (isFaculty) workspaces.push('faculty');
+  }
 
   return {
     id: user.id,
@@ -553,7 +581,36 @@ export const register = async (req: Request, res: Response, next: NextFunction):
     const { firstName, lastName, email, password, phone, registrationType } = req.body;
 
     if (!firstName || !lastName || !email || !password) {
-      return res.status(400).json({ error: 'First name, last name, email, and password are required.' });
+      return res.status(400).json({
+        success: false,
+        errorCode: 'VALIDATION_ERROR',
+        error: 'First name, last name, email, and password are required.',
+        message: 'First name, last name, email, and password are required.',
+      });
+    }
+
+    const trimmedFirst = String(firstName).trim();
+    const trimmedLast = String(lastName).trim();
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const cleanPassword = String(password);
+    const cleanPhone = phone ? String(phone).trim() : null;
+
+    if (cleanPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        errorCode: 'VALIDATION_ERROR',
+        error: 'Password must be at least 8 characters long.',
+        message: 'Password must be at least 8 characters long.',
+      });
+    }
+
+    if (cleanPhone && (cleanPhone.length !== 10 || isNaN(Number(cleanPhone)))) {
+      return res.status(400).json({
+        success: false,
+        errorCode: 'VALIDATION_ERROR',
+        error: 'Mobile number must be a valid 10-digit number.',
+        message: 'Mobile number must be a valid 10-digit number.',
+      });
     }
 
     let finalRegType: 'FRESH' | 'LATERAL_ENTRY' = 'FRESH';
@@ -565,21 +622,35 @@ export const register = async (req: Request, res: Response, next: NextFunction):
     const config = await SystemConfiguration.findOne();
     if (config) {
       if (finalRegType === 'FRESH' && config.freshAdmissionOpen === false) {
-        return res.status(403).json({ error: 'Fresh admissions are currently closed.' });
+        return res.status(403).json({
+          success: false,
+          errorCode: 'ADMISSIONS_CLOSED',
+          error: 'Fresh admissions are currently closed.',
+          message: 'Fresh admissions are currently closed.',
+        });
       }
       if (finalRegType === 'LATERAL_ENTRY' && config.lateralEntryOpen === false) {
-        return res.status(403).json({ error: 'Lateral entry admissions are currently closed.' });
+        return res.status(403).json({
+          success: false,
+          errorCode: 'ADMISSIONS_CLOSED',
+          error: 'Lateral entry admissions are currently closed.',
+          message: 'Lateral entry admissions are currently closed.',
+        });
       }
       if (config.admissionOpen === false) {
-        return res.status(403).json({ error: 'Admissions are currently closed. Please contact the college office for further information.' });
+        return res.status(403).json({
+          success: false,
+          errorCode: 'ADMISSIONS_CLOSED',
+          error: 'Admissions are currently closed. Please contact the college office for further information.',
+          message: 'Admissions are currently closed. Please contact the college office for further information.',
+        });
       }
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
-
     // Enforce Backend OTP verification check before allowing registration
+    let verifiedOtp: Otp | null = null;
     if (process.env.EMAIL_OTP_ENABLED !== 'false') {
-      const verifiedOtp = await Otp.findOne({
+      verifiedOtp = await Otp.findOne({
         where: {
           email: normalizedEmail,
           purpose: 'REGISTER',
@@ -589,21 +660,114 @@ export const register = async (req: Request, res: Response, next: NextFunction):
       });
 
       if (!verifiedOtp) {
-        return res.status(403).json({ error: 'Email verification required before registration. Please verify your email via OTP code.' });
+        return res.status(403).json({
+          success: false,
+          errorCode: 'EMAIL_VERIFICATION_REQUIRED',
+          error: 'Email verification required before registration. Please verify your email via OTP code.',
+          message: 'Email verification required before registration. Please verify your email via OTP code.',
+        });
       }
     }
 
-    // Check email uniqueness
+    // Check email uniqueness and existing accounts
     const existing = await User.findOne({ where: { email: normalizedEmail } });
     if (existing) {
-      return res.status(409).json({ error: 'An account with this email already exists.' });
+      const existingStudent = await Student.findOne({ where: { userId: existing.id } });
+      const existingAdmission = await Admission.findOne({ where: { userId: existing.id } });
+
+      const isEnrolledOrStaff = existing.role !== 'STUDENT' || !!existingStudent;
+      const isRegistrationCompleted = !!existingAdmission;
+      const hasPriorActivity = existing.lastActivityAt !== null;
+
+      // Scenario B: Established or completed registration account exists -> do not overwrite
+      if (isEnrolledOrStaff || isRegistrationCompleted || hasPriorActivity) {
+        return res.status(409).json({
+          success: false,
+          errorCode: 'ACCOUNT_EXISTS',
+          error: 'An account with this email already exists. Please log in to your portal.',
+          message: 'An account with this email already exists. Please log in to your portal.',
+        });
+      }
+
+      // Scenario C: Safe recovery for partial/incomplete registration (User created, but Admission missing)
+      const isPasswordMatch = await existing.comparePassword(cleanPassword);
+      if (!isPasswordMatch) {
+        return res.status(409).json({
+          success: false,
+          errorCode: 'ACCOUNT_EXISTS',
+          error: 'An account with this email already exists. Please log in with your credentials or reset your password.',
+          message: 'An account with this email already exists. Please log in with your credentials or reset your password.',
+        });
+      }
+
+      logger.info(`RECOVERY: Resuming incomplete registration for user ${existing.id} (${normalizedEmail})`);
+
+      // Atomically update user profile & ensure draft admission exists
+      const currentAcademicYear = config?.admissionCycle || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
+      await sequelize.transaction(async (t) => {
+        await existing.update(
+          {
+            firstName: trimmedFirst,
+            lastName: trimmedLast,
+            phone: cleanPhone || existing.phone,
+            registrationType: finalRegType,
+          },
+          { transaction: t }
+        );
+
+        if (!existingAdmission) {
+          await Admission.create(
+            {
+              userId: existing.id,
+              applicationNumber: null,
+              academicYear: currentAcademicYear,
+              applicationStatus: 'DRAFT',
+              applicationType: finalRegType,
+              entrySemester: finalRegType === 'LATERAL_ENTRY' ? 3 : 1,
+            },
+            { transaction: t }
+          );
+        }
+      });
+
+      // Invalidate OTP after successful registration recovery
+      if (verifiedOtp) {
+        await verifiedOtp.update({ verified: false, expiresAt: new Date(0) }).catch((err) => {
+          logger.warn('Failed to invalidate registration OTP:', err);
+        });
+      }
+
+      // Non-blocking welcome email
+      emailService
+        .sendRegistrationSuccessEmail(normalizedEmail, `${trimmedFirst} ${trimmedLast}`, finalRegType)
+        .catch((err) => {
+          logger.warn(`Failed to dispatch registration success email to ${normalizedEmail}:`, err);
+        });
+
+      // Generate tokens and return session
+      const { accessToken, refreshToken: newRefreshToken } = await authService.generateTokens(existing);
+      res.cookie('refreshToken', newRefreshToken, cookieOptions);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Account registration completed successfully.',
+        data: {
+          token: accessToken,
+          user: await getUserPayload(existing),
+        },
+      });
     }
 
     // Check phone uniqueness if provided
-    if (phone) {
-      const existingPhone = await User.findOne({ where: { phone: phone.trim() } });
+    if (cleanPhone) {
+      const existingPhone = await User.findOne({ where: { phone: cleanPhone } });
       if (existingPhone) {
-        return res.status(409).json({ error: 'An account with this mobile number already exists.' });
+        return res.status(409).json({
+          success: false,
+          errorCode: 'DUPLICATE_PHONE',
+          error: 'An account with this mobile number already exists.',
+          message: 'An account with this mobile number already exists.',
+        });
       }
     }
 
@@ -612,23 +776,56 @@ export const register = async (req: Request, res: Response, next: NextFunction):
 
     // Hash password with bcrypt
     const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(password, salt);
+    const passwordHash = await bcrypt.hash(cleanPassword, salt);
 
-    // Create user
-    const newUser = await User.create({
-      username,
-      email: normalizedEmail,
-      passwordHash,
-      firstName,
-      lastName,
-      phone: phone || null,
-      role: 'STUDENT',
-      status: 'ACTIVE',
-      registrationType: finalRegType,
+    // Scenario A: First registration - wrap in atomic database transaction
+    let newUser!: User;
+    const currentAcademicYear = config?.admissionCycle || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
+
+    await sequelize.transaction(async (t) => {
+      // 1. Create User
+      newUser = await User.create(
+        {
+          username,
+          email: normalizedEmail,
+          passwordHash,
+          firstName: trimmedFirst,
+          lastName: trimmedLast,
+          phone: cleanPhone,
+          role: 'STUDENT',
+          status: 'ACTIVE',
+          registrationType: finalRegType,
+        },
+        { transaction: t }
+      );
+
+      // 2. Atomically create draft Admission
+      await Admission.create(
+        {
+          userId: newUser.id,
+          applicationNumber: null,
+          academicYear: currentAcademicYear,
+          applicationStatus: 'DRAFT',
+          applicationType: finalRegType,
+          entrySemester: finalRegType === 'LATERAL_ENTRY' ? 3 : 1,
+        },
+        { transaction: t }
+      );
     });
 
-    // Send registration successful email notification
-    await emailService.sendRegistrationSuccessEmail(normalizedEmail, `${firstName} ${lastName}`, finalRegType);
+    // Invalidate OTP after successful creation
+    if (verifiedOtp) {
+      await verifiedOtp.update({ verified: false, expiresAt: new Date(0) }).catch((err) => {
+        logger.warn('Failed to invalidate registration OTP:', err);
+      });
+    }
+
+    // Non-blocking welcome email
+    emailService
+      .sendRegistrationSuccessEmail(normalizedEmail, `${trimmedFirst} ${trimmedLast}`, finalRegType)
+      .catch((err) => {
+        logger.warn(`Failed to dispatch registration success email to ${normalizedEmail}:`, err);
+      });
 
     // Generate tokens and return login payload
     const { accessToken, refreshToken: newRefreshToken } = await authService.generateTokens(newUser);
@@ -642,7 +839,19 @@ export const register = async (req: Request, res: Response, next: NextFunction):
         user: await getUserPayload(newUser),
       },
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      const field = error.errors?.[0]?.path;
+      const message = field === 'phone'
+        ? 'An account with this mobile number already exists.'
+        : 'An account with this email already exists.';
+      return res.status(409).json({
+        success: false,
+        errorCode: 'DUPLICATE_RESOURCE',
+        error: message,
+        message,
+      });
+    }
     return next(error);
   }
 };
@@ -1278,12 +1487,35 @@ export const getUserWorkspaces = async (req: Request, res: Response, next: NextF
       return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
 
+    if (user.role === 'STUDENT') {
+      return res.json({ success: true, workspaces: [] });
+    }
+
     const isHod = user.role === 'HOD' || (await HOD.findOne({ where: { userId: user.id, isActive: true } })) !== null;
     const isTeacher = user.role === 'TEACHER' || (user.role as string) === 'FACULTY';
     const isDean = user.role === 'DEAN';
     const isPrincipal = user.role === 'PRINCIPAL';
-    const hasFacultyAssignment = (await FacultyAssignment.count({ where: { userId: user.id, status: 'ACTIVE' } })) > 0;
-    const teacherProfile = await Teacher.findOne({ where: { userId: user.id, status: 'ACTIVE' } });
+    const teacherProfile = await Teacher.findOne({
+      where: {
+        [Op.or]: [{ userId: user.id }, { id: user.id }],
+        status: 'ACTIVE',
+      },
+    });
+    const teacherCandidateIds = Array.from(new Set([user.id, teacherProfile?.id, teacherProfile?.userId].filter(Boolean) as string[]));
+    const hasFacultyAssignment = (await FacultyAssignment.count({
+      where: {
+        [Op.or]: [
+          { userId: { [Op.in]: teacherCandidateIds } },
+          { teacherId: { [Op.in]: teacherCandidateIds } },
+        ],
+        status: {
+          [Op.or]: [
+            { [Op.in]: ['ACTIVE'] },
+            { [Op.is]: null },
+          ],
+        },
+      },
+    })) > 0;
     const isTeachingConfigured = teacherProfile !== null && !!teacherProfile.departmentId;
     const isFaculty = isTeacher || isHod || isDean || isPrincipal || hasFacultyAssignment || isTeachingConfigured;
 

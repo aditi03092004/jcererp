@@ -1,3 +1,4 @@
+import { Op } from 'sequelize';
 import Teacher from '../models/Teacher';
 import Department from '../models/Department';
 import User from '../models/User';
@@ -19,14 +20,24 @@ export const teachingProfileService = {
     }
 
     const teacher = await Teacher.findOne({
-      where: { userId },
+      where: { [Op.or]: [{ userId }, { id: userId }] },
       include: [{ model: Department, as: 'department', attributes: ['id', 'name', 'code', 'type'] }],
     });
 
+    const candidateIds = Array.from(new Set([userId, user.id, teacher?.id, teacher?.userId].filter(Boolean) as string[]));
+
     const activeAssignments = await FacultyAssignment.findAll({
       where: {
-        userId,
-        status: 'ACTIVE',
+        [Op.or]: [
+          { userId: { [Op.in]: candidateIds } },
+          { teacherId: { [Op.in]: candidateIds } },
+        ],
+        status: {
+          [Op.or]: [
+            { [Op.in]: ['ACTIVE'] },
+            { [Op.is]: null },
+          ],
+        },
       },
       include: [
         { model: Subject, as: 'subject', attributes: ['id', 'name', 'code', 'credits', 'type', 'semester'] },
@@ -89,12 +100,24 @@ export const teachingProfileService = {
       throw new Error('User not found.');
     }
 
-    let teacher = await Teacher.findOne({ where: { userId } });
+    let teacher = await Teacher.findOne({ where: { [Op.or]: [{ userId }, { id: userId }] } });
 
     // Enforce safety rule: if changing department when active assignments exist
     if (teacher && teacher.departmentId && teacher.departmentId !== coreDepartmentId) {
+      const candidateIds = Array.from(new Set([userId, user.id, teacher.id, teacher.userId].filter(Boolean) as string[]));
       const activeAssignments = await FacultyAssignment.findAll({
-        where: { userId, status: 'ACTIVE' },
+        where: {
+          [Op.or]: [
+            { userId: { [Op.in]: candidateIds } },
+            { teacherId: { [Op.in]: candidateIds } },
+          ],
+          status: {
+            [Op.or]: [
+              { [Op.in]: ['ACTIVE'] },
+              { [Op.is]: null },
+            ],
+          },
+        },
       });
       if (activeAssignments.length > 0) {
         throw new Error(

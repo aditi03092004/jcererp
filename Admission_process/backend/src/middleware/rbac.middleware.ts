@@ -65,7 +65,8 @@ export const PERMISSION_MATRIX: Record<string, string[]> = {
   PARENT: [
     'view_results',
     'view_timetable'
-  ]
+  ],
+  CYBERADMIN: []
 };
 
 /**

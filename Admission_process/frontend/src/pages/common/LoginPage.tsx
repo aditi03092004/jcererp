@@ -94,6 +94,18 @@ export const LoginPage: React.FC = () => {
     };
 
     const normalizedRole = (userRole || '').trim().toUpperCase();
+
+    if (normalizedRole === 'CYBERADMIN') {
+      authService.logout();
+      dispatch(loginFailure(''));
+      const signalSafeUrl = import.meta.env.VITE_SIGNALSAFE_URL || 'http://localhost:5174';
+      setToast({ type: 'success', message: 'CyberAdmin credentials are for SignalSafe Campus. Redirecting...' });
+      setTimeout(() => {
+        window.location.href = signalSafeUrl;
+      }, 1500);
+      return;
+    }
+
     const targetDashboard = dashboardRoutes[normalizedRole];
 
     if (targetDashboard) {

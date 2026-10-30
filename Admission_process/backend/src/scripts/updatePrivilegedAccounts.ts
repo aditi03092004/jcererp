@@ -25,6 +25,9 @@ async function updatePrivilegedAccounts() {
     const principalEmail = (process.env.INITIAL_PRINCIPAL_EMAIL || 'arihantdesai47@gmail.com').trim().toLowerCase();
     const principalPassword = process.env.INITIAL_PRINCIPAL_PASSWORD || 'Desai@2004';
 
+    const cyberAdminEmail = process.env.INITIAL_CYBERADMIN_EMAIL ? process.env.INITIAL_CYBERADMIN_EMAIL.trim().toLowerCase() : null;
+    const cyberAdminPassword = process.env.INITIAL_CYBERADMIN_PASSWORD || 'Desai@2004';
+
     const hashedAdminPassword = await bcrypt.hash(adminPassword, 10);
     const hashedPrincipalPassword = await bcrypt.hash(principalPassword, 10);
 
@@ -173,6 +176,38 @@ async function updatePrivilegedAccounts() {
       console.log(`✓ Created new Principal account ID [${targetPrincipal.id}] with email: ${principalEmail}`);
     }
 
+    // ─── 2.5. UPDATE / ENSURE CYBERADMIN ACCOUNT (SIGNALSAFE) ─────────────────
+    if (cyberAdminEmail) {
+      const hashedCyberAdminPassword = await bcrypt.hash(cyberAdminPassword, 10);
+      let targetCyberAdmin = await User.findOne({ where: { email: cyberAdminEmail } });
+      if (targetCyberAdmin) {
+        await targetCyberAdmin.update({
+          username: cyberAdminEmail,
+          email: cyberAdminEmail,
+          passwordHash: hashedCyberAdminPassword,
+          role: 'CYBERADMIN',
+          status: 'ACTIVE',
+          firstName: 'Cyber',
+          lastName: 'Security Officer',
+          mustChangePassword: false,
+        });
+        console.log(`✓ Preserved CyberAdmin account ID [${targetCyberAdmin.id}] with email: ${cyberAdminEmail}`);
+      } else {
+        targetCyberAdmin = await User.create({
+          username: cyberAdminEmail,
+          email: cyberAdminEmail,
+          passwordHash: hashedCyberAdminPassword,
+          role: 'CYBERADMIN',
+          status: 'ACTIVE',
+          firstName: 'Cyber',
+          lastName: 'Security Officer',
+          phone: '9876543202',
+          mustChangePassword: false,
+        });
+        console.log(`✓ Created new CyberAdmin account ID [${targetCyberAdmin.id}] with email: ${cyberAdminEmail}`);
+      }
+    }
+
     // ─── 3. VERIFICATION CHECKS ──────────────────────────────────────────────
     console.log('\n----------------------------------------------------');
     console.log('🔍 RUNNING DATABASE VERIFICATION CHECKS...');
@@ -180,9 +215,11 @@ async function updatePrivilegedAccounts() {
 
     const adminCount = await User.count({ where: { role: 'ADMIN' } });
     const principalCount = await User.count({ where: { role: 'PRINCIPAL' } });
+    const cyberAdminCount = await User.count({ where: { role: 'CYBERADMIN' } });
 
-    console.log(`• Total Active ADMIN Accounts in DB    : ${adminCount}`);
-    console.log(`• Total Active PRINCIPAL Accounts in DB: ${principalCount}`);
+    console.log(`• Total Active ADMIN Accounts in DB     : ${adminCount}`);
+    console.log(`• Total Active PRINCIPAL Accounts in DB : ${principalCount}`);
+    console.log(`• Total Active CYBERADMIN Accounts in DB: ${cyberAdminCount}`);
 
     console.log('\n====================================================');
     console.log('🎉 PRIVILEGED ACCOUNT SEEDING/UPDATE SUCCESSFUL');

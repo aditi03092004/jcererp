@@ -3141,7 +3141,7 @@ export const assignFacultySubject = async (req: AuthenticatedRequest, res: Respo
       attendanceAccess: attendanceAccess !== undefined ? Boolean(attendanceAccess) : true,
       marksAccess: marksAccess !== undefined ? Boolean(marksAccess) : true,
       createdByHODId: req.user?.id || null,
-      status: teacher.user?.status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE',
+      status: 'ACTIVE',
     });
 
     await logAudit(req, 'HOD_ASSIGN_SUBJECT', {
