@@ -69,28 +69,7 @@ export const SecurityAuditLogsTab: React.FC = () => {
 
   return (
     <div className="space-y-7 sm:space-y-8">
-      {/* ── Top Bar ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-neutral-200/80 dark:border-neutral-800">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-neutral-900 dark:text-white tracking-tight flex items-center space-x-2">
-            <span>Security Administration Audit Trail</span>
-          </h1>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1 font-medium">
-            Immutable log of all CyberAdmin investigations, rule edits, remediation overrides, and defensive actions.
-          </p>
-        </div>
-
-        <button
-          onClick={fetchAuditLogs}
-          disabled={refreshing}
-          className="self-start sm:self-center flex items-center space-x-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 transition shadow-xs cursor-pointer disabled:opacity-50"
-        >
-          <RefreshCw className={`size-4 ${refreshing ? 'animate-spin text-violet-600 dark:text-violet-400' : ''}`} />
-          <span>Refresh Audit Trail</span>
-        </button>
-      </div>
-
-      {/* ── Filter Toolbar ── */}
+      {/* ── Filter Toolbar (Top element, no duplicate title) ── */}
       <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200/80 dark:border-neutral-800 p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center space-x-3">
           <span className="text-xs sm:text-sm font-bold text-neutral-600 dark:text-neutral-400">Filter Action:</span>
@@ -109,9 +88,20 @@ export const SecurityAuditLogsTab: React.FC = () => {
           </select>
         </div>
 
-        <span className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 font-mono font-medium">
-          Showing {logs.length} audited entries
-        </span>
+        <div className="flex items-center space-x-3 self-start sm:self-auto">
+          <span className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 font-mono font-medium">
+            Showing {logs.length} audited entries
+          </span>
+
+          <button
+            onClick={fetchAuditLogs}
+            disabled={refreshing}
+            className="flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 transition shadow-xs cursor-pointer disabled:opacity-50"
+          >
+            <RefreshCw className={`size-4 ${refreshing ? 'animate-spin text-violet-600 dark:text-violet-400' : ''}`} />
+            <span>Refresh Audit Trail</span>
+          </button>
+        </div>
       </div>
 
       {/* ── Audit Logs List / Table ── */}

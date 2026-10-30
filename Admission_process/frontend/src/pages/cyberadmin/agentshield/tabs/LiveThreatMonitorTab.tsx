@@ -114,39 +114,7 @@ export const LiveThreatMonitorTab: React.FC = () => {
 
   return (
     <div className="space-y-7 sm:space-y-8">
-      {/* ── Top Bar with Live Streaming Pulse ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-neutral-200/80 dark:border-neutral-800">
-        <div>
-          <div className="flex items-center space-x-3">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-neutral-900 dark:text-white tracking-tight">
-              Live Threat Monitor
-            </h1>
-            <span
-              className={`text-xs font-extrabold uppercase px-3 py-1 rounded-full border ${
-                socketConnected
-                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400'
-                  : 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400'
-              }`}
-            >
-              {socketConnected ? 'STREAMING REAL-TIME' : 'POLLING FALLBACK (8s)'}
-            </span>
-          </div>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1 font-medium">
-            Real-time feed of detected security threats, anomalous request patterns, and automated mitigation actions. (Nominal 200 OK traffic is monitored by telemetry and excluded from threat logs).
-          </p>
-        </div>
-
-        <button
-          onClick={fetchEvents}
-          disabled={refreshing}
-          className="self-start sm:self-center flex items-center space-x-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 transition shadow-xs cursor-pointer disabled:opacity-50"
-        >
-          <RefreshCw className={`size-4 ${refreshing ? 'animate-spin text-violet-600 dark:text-violet-400' : ''}`} />
-          <span>Refresh Feed</span>
-        </button>
-      </div>
-
-      {/* ── Filter & Search Toolbar ── */}
+      {/* ── Filter & Search Toolbar (Top element, no duplicate title) ── */}
       <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200/80 dark:border-neutral-800 p-5 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3">
           {/* Risk Level Filter Buttons */}
@@ -180,19 +148,43 @@ export const LiveThreatMonitorTab: React.FC = () => {
             <option value="INJECTION">Injection</option>
             <option value="DOS_THROTTLE">Rate Anomaly</option>
           </select>
+
+          {/* Streaming Status Badge */}
+          <span
+            className={`hidden xl:inline-flex items-center gap-1.5 text-xs font-extrabold uppercase px-3 py-1 rounded-full border ${
+              socketConnected
+                ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400'
+                : 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400'
+            }`}
+          >
+            <span className={`size-1.5 rounded-full ${socketConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+            <span>{socketConnected ? 'STREAMING REAL-TIME' : 'POLLING FALLBACK (8s)'}</span>
+          </span>
         </div>
 
-        {/* Text Search Form */}
-        <form onSubmit={handleSearchSubmit} className="relative min-w-[280px]">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search endpoint, IP, correlation ID..."
-            className="w-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 text-xs sm:text-sm rounded-xl pl-9 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 placeholder:text-neutral-400 shadow-xs"
-          />
-          <Search className="size-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
-        </form>
+        {/* Text Search Form & Refresh Feed Button */}
+        <div className="flex items-center gap-3">
+          <form onSubmit={handleSearchSubmit} className="relative min-w-[260px] flex-1 sm:flex-initial">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search endpoint, IP, correlation ID..."
+              className="w-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 text-xs sm:text-sm rounded-xl pl-9 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 placeholder:text-neutral-400 shadow-xs"
+            />
+            <Search className="size-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          </form>
+
+          <button
+            onClick={fetchEvents}
+            disabled={refreshing}
+            className="flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 transition shadow-xs cursor-pointer disabled:opacity-50 shrink-0"
+            title="Refresh Feed"
+          >
+            <RefreshCw className={`size-4 ${refreshing ? 'animate-spin text-violet-600 dark:text-violet-400' : ''}`} />
+            <span className="hidden sm:inline">Refresh Feed</span>
+          </button>
+        </div>
       </div>
 
       {/* ── Events Table ── */}

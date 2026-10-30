@@ -163,35 +163,14 @@ export const OwaspZapTab: React.FC = () => {
 
   return (
     <div className="space-y-7 sm:space-y-8">
-      {/* ── Top Bar & Import Action ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-neutral-200/80 dark:border-neutral-800">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-neutral-900 dark:text-white tracking-tight flex items-center space-x-2">
-            <span>OWASP ZAP Dynamic Security Assessments</span>
-          </h1>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1 font-medium">
-            Ingest, review, and track remediation for dynamic application security testing (DAST) vulnerability scans.
-          </p>
-        </div>
-
-        <div>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileUpload}
-            accept=".json,.xml"
-            className="hidden"
-          />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="flex items-center space-x-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-violet-600 hover:bg-violet-700 text-white transition shadow-xs cursor-pointer disabled:opacity-50"
-          >
-            <Upload className="size-4" />
-            <span>{uploading ? 'Parsing & Ingesting...' : 'Import ZAP Report'}</span>
-          </button>
-        </div>
-      </div>
+      {/* Hidden file input for report import */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileUpload}
+        accept=".json,.xml"
+        className="hidden"
+      />
 
       {uploadSuccess && (
         <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300 text-xs sm:text-sm font-semibold flex items-center justify-between">
@@ -245,20 +224,31 @@ export const OwaspZapTab: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Other Assessments Selector */}
-                {assessments.length > 1 && (
-                  <select
-                    value={selectedAssessmentId || ''}
-                    onChange={(e) => loadAssessmentDetail(e.target.value)}
-                    className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 text-xs sm:text-sm rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 cursor-pointer shadow-xs"
+                <div className="flex flex-wrap items-center gap-3 self-start sm:self-auto">
+                  {/* Other Assessments Selector */}
+                  {assessments.length > 1 && (
+                    <select
+                      value={selectedAssessmentId || ''}
+                      onChange={(e) => loadAssessmentDetail(e.target.value)}
+                      className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 text-xs sm:text-sm rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 cursor-pointer shadow-xs"
+                    >
+                      {assessments.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.title} ({new Date(a.scanDate).toLocaleDateString()})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-violet-600 hover:bg-violet-700 text-white transition shadow-xs cursor-pointer disabled:opacity-50 shrink-0"
                   >
-                    {assessments.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.title} ({new Date(a.scanDate).toLocaleDateString()})
-                      </option>
-                    ))}
-                  </select>
-                )}
+                    <Upload className="size-4" />
+                    <span>{uploading ? 'Parsing...' : 'Import ZAP Report'}</span>
+                  </button>
+                </div>
               </div>
 
               {/* Severity Breakdown Badges */}

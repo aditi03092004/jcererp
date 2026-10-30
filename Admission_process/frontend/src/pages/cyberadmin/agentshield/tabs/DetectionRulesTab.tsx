@@ -92,21 +92,22 @@ export const DetectionRulesTab: React.FC = () => {
 
   return (
     <div className="space-y-7 sm:space-y-8">
-      {/* ── Top Bar ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-neutral-200/80 dark:border-neutral-800">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-neutral-900 dark:text-white tracking-tight flex items-center space-x-2">
-            <span>Configurable Detection Rules</span>
-          </h1>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1 font-medium">
-            Manage detection parameters, anomaly thresholds, and automated defensive mitigation policies.
-          </p>
+      {/* ── Top Toolbar (No duplicate title) ── */}
+      <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200/80 dark:border-neutral-800 p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center space-x-3">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800 text-xs font-bold">
+            <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>{rules.filter((r) => r.enabled).length} of {rules.length} Rules Active</span>
+          </span>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400 font-medium hidden sm:inline">
+            Configured anomaly thresholds & automated response policies
+          </span>
         </div>
 
         <button
           onClick={fetchRules}
           disabled={refreshing}
-          className="self-start sm:self-center flex items-center space-x-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 transition shadow-xs cursor-pointer disabled:opacity-50"
+          className="self-start sm:self-auto flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 transition shadow-xs cursor-pointer disabled:opacity-50"
         >
           <RefreshCw className={`size-4 ${refreshing ? 'animate-spin text-violet-600 dark:text-violet-400' : ''}`} />
           <span>Refresh Rules</span>

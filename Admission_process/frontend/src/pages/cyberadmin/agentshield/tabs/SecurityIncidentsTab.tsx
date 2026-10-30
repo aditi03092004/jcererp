@@ -230,28 +230,7 @@ export const SecurityIncidentsTab: React.FC = () => {
 
   return (
     <div className="space-y-7 sm:space-y-8">
-      {/* ── Top Bar ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-neutral-200/80 dark:border-neutral-800">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-neutral-900 dark:text-white tracking-tight flex items-center space-x-2">
-            <span>Security Incidents Ledger</span>
-          </h1>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1 font-medium">
-            Correlated investigations, threat containment lifecycles, and audited administrative evidence notes.
-          </p>
-        </div>
-
-        <button
-          onClick={fetchIncidents}
-          disabled={refreshing}
-          className="self-start sm:self-center flex items-center space-x-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 transition shadow-xs cursor-pointer disabled:opacity-50"
-        >
-          <RefreshCw className={`size-4 ${refreshing ? 'animate-spin text-violet-600 dark:text-violet-400' : ''}`} />
-          <span>Refresh Incidents</span>
-        </button>
-      </div>
-
-      {/* ── Summary Cards Row ── */}
+      {/* ── Summary Cards Row (Starts immediately at top, no duplicate title) ── */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 sm:gap-5">
         <div
           onClick={() => setStatusFilter('ALL')}
@@ -368,23 +347,35 @@ export const SecurityIncidentsTab: React.FC = () => {
           </select>
         </div>
 
-        {/* Text Search */}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            fetchIncidents();
-          }}
-          className="relative min-w-[280px]"
-        >
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search incident number, title, IP..."
-            className="w-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 text-xs sm:text-sm rounded-xl pl-9 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 placeholder:text-neutral-400 shadow-xs"
-          />
-          <Search className="size-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
-        </form>
+        {/* Text Search & Refresh */}
+        <div className="flex items-center gap-3">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              fetchIncidents();
+            }}
+            className="relative min-w-[260px] flex-1 sm:flex-initial"
+          >
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search incident number, title, IP..."
+              className="w-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 text-xs sm:text-sm rounded-xl pl-9 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 placeholder:text-neutral-400 shadow-xs"
+            />
+            <Search className="size-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          </form>
+
+          <button
+            onClick={fetchIncidents}
+            disabled={refreshing}
+            className="flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 transition shadow-xs cursor-pointer disabled:opacity-50 shrink-0"
+            title="Refresh Incidents"
+          >
+            <RefreshCw className={`size-4 ${refreshing ? 'animate-spin text-violet-600 dark:text-violet-400' : ''}`} />
+            <span className="hidden sm:inline">Refresh Incidents</span>
+          </button>
+        </div>
       </div>
 
       {/* ── Incidents Table ── */}
