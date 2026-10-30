@@ -297,12 +297,12 @@ export const LandingPage: React.FC = () => {
 
       {/* Header (Sticky Glassmorphism Header with Soft Shadow) */}
       <header className="sticky top-0 z-30 w-full bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-[#E2E8F0] dark:border-slate-800/70 shadow-sm transition-all duration-200">
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-3.5">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-3.5 sm:py-4 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 sm:gap-4">
+          <div className="flex items-center gap-3.5 min-w-0">
             <div className="w-14 h-14 sm:w-18 sm:h-18 flex items-center justify-center overflow-hidden shrink-0">
               <img src="/logo.png" alt="JCER Logo" className="w-full h-full object-contain" />
             </div>
-            <div className="flex flex-col justify-center flex-1 space-y-0.5">
+            <div className="flex flex-col justify-center flex-1 space-y-0.5 min-w-0">
               <h1 className="text-[#0B4F8A] dark:text-white text-sm sm:text-base md:text-lg font-extrabold leading-tight tracking-tight uppercase" style={{ color: isDark ? '#ffffff' : '#0B4F8A' }}>
                 {config.collegeName}
               </h1>
@@ -315,23 +315,27 @@ export const LandingPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleSignalSafeNavigation}
-              id="header-signalsafe-btn"
-              className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold border border-emerald-500/50 dark:border-emerald-500/40 text-emerald-700 dark:text-emerald-300 bg-emerald-50/90 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-all duration-200 shadow-sm cursor-pointer"
-              title="Campus Cybersecurity and Threat Detection"
-            >
-              <ShieldAlert className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              SignalSafe Campus
-            </button>
-
+          <div className="flex items-center gap-2.5 sm:gap-3.5 shrink-0">
+            {/* 1. ERP Portal Button (First, on the left) */}
             <button
               onClick={handleErpNavigation}
               id="header-erp-btn"
-              className="hidden sm:flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold border border-[#0F4C81]/80 dark:border-slate-700 text-[#0F4C81] dark:text-slate-200 bg-white/90 dark:bg-slate-900/90 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-200 shadow-sm cursor-pointer"
+              className="inline-flex items-center justify-center gap-2 px-4 sm:px-5 md:px-6 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-semibold border border-[#0F4C81]/80 dark:border-slate-700 text-[#0F4C81] dark:text-slate-200 bg-white/90 dark:bg-slate-900/90 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-200 shadow-sm hover:shadow cursor-pointer shrink-0"
+              title="Access College ERP Academic Portal"
             >
-              ERP Portal <ArrowRight className="w-3.5 h-3.5 text-current" />
+              <span>ERP Portal</span>
+              <ArrowRight className="w-4 h-4 text-current transition-transform duration-200 group-hover:translate-x-0.5" />
+            </button>
+
+            {/* 2. SignalSafe Campus Button (Second, immediately to its right) */}
+            <button
+              onClick={handleSignalSafeNavigation}
+              id="header-signalsafe-btn"
+              className="inline-flex items-center justify-center gap-2 px-4 sm:px-5 md:px-6 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-semibold border border-emerald-500/50 dark:border-emerald-500/40 text-emerald-700 dark:text-emerald-300 bg-emerald-50/90 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-all duration-200 shadow-sm hover:shadow cursor-pointer shrink-0"
+              title="Campus Cybersecurity and Threat Detection"
+            >
+              <ShieldAlert className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span>SignalSafe Campus</span>
             </button>
           </div>
         </div>
