@@ -84,41 +84,41 @@ export const CyberAdminLayout: React.FC = () => {
   const currentTab = new URLSearchParams(location.search).get('tab') || 'overview';
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-emerald-500/30 selection:text-emerald-300">
+    <div className="min-h-screen bg-slate-50/60 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 flex flex-col font-sans transition-colors duration-200">
       {/* ── Top SOC Navigation Bar ── */}
-      <header className="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 shadow-xl">
+      <header className="sticky top-0 z-50 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           {/* Brand & Badge */}
           <div className="flex items-center space-x-3">
-            <div className="size-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-cyan-500 p-0.5 shadow-lg shadow-emerald-950/50 flex items-center justify-center">
-              <div className="size-full bg-slate-950 rounded-[10px] flex items-center justify-center text-emerald-400">
-                <ShieldAlert className="size-5" />
-              </div>
+            <div className="size-10 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-600 text-white shadow-md shadow-violet-500/20 flex items-center justify-center">
+              <ShieldAlert className="size-5" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <span className="font-black text-lg tracking-wider text-white">AGENTSHIELD</span>
-                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
-                  ERP SOC
+                <span className="font-extrabold text-base sm:text-lg tracking-wider text-neutral-900 dark:text-white uppercase leading-none">
+                  AGENTSHIELD
+                </span>
+                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-violet-50 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-800 text-violet-700 dark:text-violet-300">
+                  ERP Security
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 font-medium">Real-Time Threat Monitoring & Incident Response</p>
+              <p className="text-[11px] text-neutral-500 dark:text-neutral-400 font-medium">Real-Time Threat Monitoring & Incident Response</p>
             </div>
           </div>
 
           {/* Telemetry Status Indicator & Quick Portal Actions */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3 sm:space-x-4">
             {/* Live Socket Status Badge */}
             <div
               className={`flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${
                 socketConnected
-                  ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-400'
-                  : 'bg-amber-950/60 border-amber-500/40 text-amber-400'
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/80 text-emerald-700 dark:text-emerald-400'
+                  : 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/80 text-amber-700 dark:text-amber-400'
               }`}
               title={socketConnected ? 'Connected to live WebSocket events' : 'Polling fallback active (8s)'}
             >
-              <span className={`size-2 rounded-full ${socketConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-              <span className="text-[11px] uppercase tracking-wider">
+              <span className={`size-2 rounded-full ${socketConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+              <span className="text-[11px] uppercase tracking-wider font-extrabold">
                 {socketConnected ? 'LIVE SOC ACTIVE' : 'POLLING MODE'}
               </span>
             </div>
@@ -126,26 +126,28 @@ export const CyberAdminLayout: React.FC = () => {
             {/* Link back to Institutional ERP Admin Dashboard */}
             <button
               onClick={() => navigate('/admin/dashboard')}
-              className="hidden md:flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition shadow-sm cursor-pointer"
+              className="hidden md:flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 transition shadow-sm cursor-pointer"
               title="Switch to College ERP Administration Portal"
             >
-              <Server className="size-3.5 text-blue-400" />
+              <Server className="size-3.5 text-violet-600 dark:text-violet-400" />
               <span>ERP Admin Portal</span>
-              <ExternalLink className="size-3 text-slate-400" />
+              <ExternalLink className="size-3 text-neutral-400" />
             </button>
 
             {/* CyberAdmin User Capsule & Logout */}
-            <div className="flex items-center space-x-3 border-l border-slate-800 pl-4">
+            <div className="flex items-center space-x-3 border-l border-neutral-200 dark:border-neutral-800 pl-3 sm:pl-4">
               <div className="text-right hidden sm:block">
-                <div className="text-xs font-bold text-white leading-tight">
+                <div className="text-xs font-bold text-neutral-900 dark:text-white leading-tight">
                   {user?.firstName || 'Cyber'} {user?.lastName || 'Admin'}
                 </div>
-                <div className="text-[10px] text-emerald-400 font-mono tracking-tight">{user?.email || 'cyberadmin@jcer.edu'}</div>
+                <div className="text-[10px] text-violet-600 dark:text-violet-400 font-mono tracking-tight font-medium">
+                  {user?.email || 'cyberadmin@jcer.edu'}
+                </div>
               </div>
 
               <button
                 onClick={handleLogout}
-                className="p-2 rounded-lg bg-slate-800/80 hover:bg-rose-950/60 hover:text-rose-400 border border-slate-700 hover:border-rose-800/60 text-slate-300 transition cursor-pointer"
+                className="p-2 rounded-xl bg-white dark:bg-neutral-800 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 border border-neutral-200 dark:border-neutral-700 hover:border-rose-200 text-neutral-600 dark:text-neutral-300 transition shadow-sm cursor-pointer"
                 title="Log Out"
               >
                 <LogOut className="size-4" />
@@ -155,8 +157,8 @@ export const CyberAdminLayout: React.FC = () => {
         </div>
 
         {/* ── Tab Navigation Strip ── */}
-        <div className="border-t border-slate-800/80 bg-slate-900/60 px-4 sm:px-6 lg:px-8">
-          <nav className="max-w-7xl mx-auto flex space-x-1 sm:space-x-2 overflow-x-auto py-2 scrollbar-none">
+        <div className="border-t border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 sm:px-6 lg:px-8">
+          <nav className="max-w-7xl mx-auto flex space-x-1 sm:space-x-1.5 overflow-x-auto py-2 scrollbar-none">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = currentTab === item.id;
@@ -164,13 +166,13 @@ export const CyberAdminLayout: React.FC = () => {
                 <button
                   key={item.id}
                   onClick={() => navigate(item.path)}
-                  className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-bold tracking-tight whitespace-nowrap transition-all duration-150 cursor-pointer ${
+                  className={`flex items-center space-x-2 px-3 py-1.5 rounded-xl text-xs font-bold tracking-tight whitespace-nowrap transition-all duration-150 cursor-pointer ${
                     isActive
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm shadow-emerald-950/30'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'
+                      ? 'bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/30 dark:text-violet-300 dark:border-violet-800/80 shadow-sm'
+                      : 'text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white hover:bg-neutral-100/70 dark:hover:bg-neutral-800/60 border border-transparent'
                   }`}
                 >
-                  <Icon className={`size-3.5 ${isActive ? 'text-emerald-400' : 'text-slate-400'}`} />
+                  <Icon className={`size-3.5 ${isActive ? 'text-violet-600 dark:text-violet-400' : 'text-neutral-400'}`} />
                   <span>{item.label}</span>
                 </button>
               );
@@ -185,7 +187,7 @@ export const CyberAdminLayout: React.FC = () => {
       </main>
 
       {/* ── Footer ── */}
-      <footer className="border-t border-slate-800/80 bg-slate-900/40 py-4 text-center text-xs text-slate-500 font-medium">
+      <footer className="border-t border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/50 py-4 text-center text-xs text-neutral-500 font-medium">
         AgentShield v2.0 • Real-Time Autonomous Threat Mitigation Engine • JCER ERP Cybersecurity Operations Center
       </footer>
     </div>

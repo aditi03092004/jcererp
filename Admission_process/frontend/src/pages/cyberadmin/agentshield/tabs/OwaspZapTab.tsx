@@ -136,40 +136,40 @@ export const OwaspZapTab: React.FC = () => {
   const getRiskColor = (risk: string) => {
     switch (risk) {
       case 'HIGH':
-        return 'bg-rose-950/80 text-rose-300 border-rose-500/50';
+        return 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800';
       case 'MEDIUM':
-        return 'bg-amber-950/80 text-amber-300 border-amber-500/50';
+        return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800';
       case 'LOW':
-        return 'bg-yellow-950/80 text-yellow-300 border-yellow-500/50';
+        return 'bg-yellow-50 text-yellow-800 border-yellow-200 dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-800';
       default:
-        return 'bg-blue-950/80 text-blue-300 border-blue-500/50';
+        return 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800';
     }
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'OPEN':
-        return 'bg-rose-500/20 text-rose-300 border-rose-500/40';
+        return 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800';
       case 'IN_REVIEW':
-        return 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+        return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800';
       case 'ACCEPTED_RISK':
-        return 'bg-slate-700/40 text-slate-300 border-slate-600/40';
+        return 'bg-neutral-100 text-neutral-700 border-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:border-neutral-700';
       case 'REMEDIATED':
-        return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800';
       default:
-        return 'bg-slate-800 text-slate-300 border-slate-700';
+        return 'bg-neutral-100 text-neutral-700 border-neutral-200 dark:bg-neutral-800 dark:text-neutral-300';
     }
   };
 
   return (
     <div className="space-y-6">
       {/* ── Top Bar & Import Action ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-neutral-200/80 dark:border-neutral-800">
         <div>
-          <h1 className="text-xl font-black text-white tracking-tight flex items-center space-x-2">
+          <h1 className="text-xl sm:text-2xl font-extrabold text-neutral-900 dark:text-white tracking-tight flex items-center space-x-2">
             <span>OWASP ZAP Dynamic Security Assessments</span>
           </h1>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
             Ingest, review, and track remediation for dynamic application security testing (DAST) vulnerability scans.
           </p>
         </div>
@@ -185,7 +185,7 @@ export const OwaspZapTab: React.FC = () => {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black transition shadow-lg cursor-pointer disabled:opacity-50"
+            className="flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold bg-violet-600 hover:bg-violet-700 text-white transition shadow-sm cursor-pointer disabled:opacity-50"
           >
             <Upload className="size-3.5" />
             <span>{uploading ? 'Parsing & Ingesting...' : 'Import ZAP Report'}</span>
@@ -194,34 +194,35 @@ export const OwaspZapTab: React.FC = () => {
       </div>
 
       {uploadSuccess && (
-        <div className="p-3 rounded-lg bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs flex items-center justify-between">
+        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300 text-xs font-semibold flex items-center justify-between">
           <span>✓ {uploadSuccess}</span>
-          <button onClick={() => setUploadSuccess(null)}><X className="size-3.5" /></button>
+          <button onClick={() => setUploadSuccess(null)} className="cursor-pointer"><X className="size-4" /></button>
         </div>
       )}
 
       {uploadError && (
-        <div className="p-3 rounded-lg bg-rose-950/60 border border-rose-500/40 text-rose-300 text-xs flex items-center justify-between">
+        <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-300 text-xs font-semibold flex items-center justify-between">
           <span>⚠️ {uploadError}</span>
-          <button onClick={() => setUploadError(null)}><X className="size-3.5" /></button>
+          <button onClick={() => setUploadError(null)} className="cursor-pointer"><X className="size-4" /></button>
         </div>
       )}
 
       {/* ── Assessment Selector & Findings Explorer ── */}
       {loading ? (
         <div className="py-20 text-center">
-          <div className="size-8 rounded-full border-2 border-emerald-500/20 border-t-emerald-400 animate-spin mx-auto" />
+          <div className="size-8 rounded-full border-2 border-violet-500/20 border-t-violet-600 animate-spin mx-auto" />
+          <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mt-2">Loading assessments...</p>
         </div>
       ) : assessments.length === 0 ? (
-        <div className="py-20 text-center space-y-3 bg-slate-900/40 rounded-xl border border-slate-800 p-8">
-          <FileCode2 className="size-12 mx-auto text-slate-600" />
-          <h3 className="text-sm font-bold text-slate-300">No Security Assessments Uploaded Yet</h3>
-          <p className="text-xs text-slate-500 max-w-md mx-auto">
+        <div className="py-20 text-center space-y-3 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200/80 dark:border-neutral-800 p-8 shadow-sm">
+          <FileCode2 className="size-12 mx-auto text-neutral-400" />
+          <h3 className="text-sm font-bold text-neutral-800 dark:text-neutral-200">No Security Assessments Uploaded Yet</h3>
+          <p className="text-xs text-neutral-500 max-w-md mx-auto">
             Upload an exported OWASP ZAP scan report (JSON format) to inspect findings, mapped CWE vulnerabilities, and track remediation.
           </p>
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="px-4 py-2 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
+            className="px-4 py-2 rounded-xl text-xs font-bold bg-violet-600 hover:bg-violet-700 text-white transition shadow-sm cursor-pointer"
           >
             Upload JSON Report
           </button>
@@ -230,16 +231,16 @@ export const OwaspZapTab: React.FC = () => {
         <div className="space-y-6">
           {/* Assessment Summary Header Card */}
           {currentAssessment && (
-            <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800 shadow-xl space-y-4">
+            <div className="p-5 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-sm space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="space-y-1">
                   <div className="flex items-center space-x-2">
-                    <span className="font-bold text-white text-base">{currentAssessment.title}</span>
-                    <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/30">
+                    <span className="font-extrabold text-neutral-900 dark:text-white text-base">{currentAssessment.title}</span>
+                    <span className="text-[10px] font-mono font-bold text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/40 px-2.5 py-0.5 rounded-full border border-violet-200 dark:border-violet-800">
                       {currentAssessment.tool}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
                     Target: {currentAssessment.targetScope} • Scanned on {new Date(currentAssessment.scanDate).toLocaleDateString()} by {currentAssessment.importedBy}
                   </p>
                 </div>
@@ -249,7 +250,7 @@ export const OwaspZapTab: React.FC = () => {
                   <select
                     value={selectedAssessmentId || ''}
                     onChange={(e) => loadAssessmentDetail(e.target.value)}
-                    className="bg-slate-950 border border-slate-800 text-slate-300 text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-emerald-500"
+                    className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 cursor-pointer shadow-sm"
                   >
                     {assessments.map((a) => (
                       <option key={a.id} value={a.id}>
@@ -261,36 +262,36 @@ export const OwaspZapTab: React.FC = () => {
               </div>
 
               {/* Severity Breakdown Badges */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 font-mono text-xs">
-                <div className="p-3 rounded-lg bg-slate-950 border border-slate-800/80">
-                  <span className="text-slate-500 text-[10px] block font-sans">Total Findings</span>
-                  <span className="text-lg font-black text-white">{currentAssessment.totalFindings}</span>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                <div className="p-3.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-700/80 border-l-4 border-l-violet-500">
+                  <span className="text-neutral-500 dark:text-neutral-400 text-[10px] block font-semibold uppercase tracking-wider">Total Findings</span>
+                  <span className="text-2xl font-black text-neutral-900 dark:text-white leading-none mt-1 block">{currentAssessment.totalFindings}</span>
                 </div>
-                <div className="p-3 rounded-lg bg-rose-950/30 border border-rose-500/30">
-                  <span className="text-rose-400 text-[10px] block font-sans">High Risk</span>
-                  <span className="text-lg font-black text-rose-300">{currentAssessment.highCount}</span>
+                <div className="p-3.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-700/80 border-l-4 border-l-rose-500">
+                  <span className="text-neutral-500 dark:text-neutral-400 text-[10px] block font-semibold uppercase tracking-wider">High Risk</span>
+                  <span className="text-2xl font-black text-rose-600 dark:text-rose-400 leading-none mt-1 block">{currentAssessment.highCount}</span>
                 </div>
-                <div className="p-3 rounded-lg bg-amber-950/30 border border-amber-500/30">
-                  <span className="text-amber-400 text-[10px] block font-sans">Medium Risk</span>
-                  <span className="text-lg font-black text-amber-300">{currentAssessment.mediumCount}</span>
+                <div className="p-3.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-700/80 border-l-4 border-l-amber-500">
+                  <span className="text-neutral-500 dark:text-neutral-400 text-[10px] block font-semibold uppercase tracking-wider">Medium Risk</span>
+                  <span className="text-2xl font-black text-amber-600 dark:text-amber-400 leading-none mt-1 block">{currentAssessment.mediumCount}</span>
                 </div>
-                <div className="p-3 rounded-lg bg-yellow-950/30 border border-yellow-500/30">
-                  <span className="text-yellow-400 text-[10px] block font-sans">Low Risk</span>
-                  <span className="text-lg font-black text-yellow-300">{currentAssessment.lowCount}</span>
+                <div className="p-3.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-700/80 border-l-4 border-l-yellow-500">
+                  <span className="text-neutral-500 dark:text-neutral-400 text-[10px] block font-semibold uppercase tracking-wider">Low Risk</span>
+                  <span className="text-2xl font-black text-yellow-600 dark:text-yellow-400 leading-none mt-1 block">{currentAssessment.lowCount}</span>
                 </div>
-                <div className="p-3 rounded-lg bg-blue-950/30 border border-blue-500/30">
-                  <span className="text-blue-400 text-[10px] block font-sans">Informational</span>
-                  <span className="text-lg font-black text-blue-300">{currentAssessment.informationalCount}</span>
+                <div className="p-3.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-700/80 border-l-4 border-l-blue-500">
+                  <span className="text-neutral-500 dark:text-neutral-400 text-[10px] block font-semibold uppercase tracking-wider">Informational</span>
+                  <span className="text-2xl font-black text-blue-600 dark:text-blue-400 leading-none mt-1 block">{currentAssessment.informationalCount}</span>
                 </div>
               </div>
             </div>
           )}
 
           {/* ── Findings Table ── */}
-          <div className="bg-slate-900/60 rounded-xl border border-slate-800 overflow-hidden shadow-xl space-y-3 p-5">
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200/80 dark:border-neutral-800 overflow-hidden shadow-sm space-y-4 p-5">
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
               <div className="flex items-center space-x-2">
-                <span className="text-xs uppercase font-black text-slate-300 tracking-wider">
+                <span className="text-xs uppercase font-extrabold text-neutral-900 dark:text-white tracking-wider">
                   Vulnerability Findings Inventory ({filteredFindings.length})
                 </span>
               </div>
@@ -299,7 +300,7 @@ export const OwaspZapTab: React.FC = () => {
                 <select
                   value={riskFilter}
                   onChange={(e) => setRiskFilter(e.target.value)}
-                  className="bg-slate-950 border border-slate-800 text-slate-300 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-emerald-500"
+                  className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 cursor-pointer shadow-sm"
                 >
                   <option value="ALL">All Risk Levels</option>
                   <option value="HIGH">High</option>
@@ -308,28 +309,29 @@ export const OwaspZapTab: React.FC = () => {
                   <option value="INFORMATIONAL">Informational</option>
                 </select>
 
-                <div className="relative min-w-[200px]">
+                <div className="relative min-w-[220px]">
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search alert, URL, CWE..."
-                    className="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-lg pl-7 pr-3 py-1.5 focus:outline-none focus:border-emerald-500 placeholder:text-slate-500"
+                    className="w-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 text-xs rounded-xl pl-8 pr-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 placeholder:text-neutral-400 shadow-sm"
                   />
-                  <Search className="size-3 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  <Search className="size-3.5 text-neutral-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
                 </div>
               </div>
             </div>
 
             {filteredFindings.length === 0 ? (
-              <div className="py-12 text-center text-slate-500">
-                <CheckCircle2 className="size-8 mx-auto text-emerald-500/40 mb-2" />
-                <p className="text-xs font-bold text-slate-300">No Findings Matching Filter</p>
+              <div className="py-12 text-center text-neutral-500 space-y-1">
+                <CheckCircle2 className="size-8 mx-auto text-emerald-500/60 mb-1" />
+                <p className="text-xs font-bold text-neutral-800 dark:text-neutral-200">No Findings Matching Filter</p>
+                <p className="text-[11px] text-neutral-400">All scanned components clear with current filter selection.</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-neutral-800">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-950/80 text-slate-400 text-[10px] uppercase font-black border-b border-slate-800">
+                  <thead className="bg-neutral-50/80 dark:bg-neutral-800/60 text-neutral-500 dark:text-neutral-400 text-[10px] uppercase font-bold border-b border-neutral-200 dark:border-neutral-800">
                     <tr>
                       <th className="py-2.5 px-3">Risk</th>
                       <th className="py-2.5 px-3">Alert / Vulnerability</th>
@@ -339,32 +341,32 @@ export const OwaspZapTab: React.FC = () => {
                       <th className="py-2.5 px-3 text-right">Details</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/60 font-sans">
+                  <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800/60 font-sans">
                     {filteredFindings.map((f) => (
-                      <tr key={f.id} className="hover:bg-slate-800/30 transition-colors">
+                      <tr key={f.id} className="hover:bg-neutral-50/70 dark:hover:bg-neutral-800/40 transition-colors">
                         <td className="py-2.5 px-3 whitespace-nowrap">
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase border ${getRiskColor(f.risk)}`}>
                             {f.risk}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3 font-bold text-slate-200 max-w-xs truncate" title={f.alert}>
+                        <td className="py-2.5 px-3 font-bold text-neutral-800 dark:text-neutral-200 max-w-xs truncate" title={f.alert}>
                           {f.alert}
                         </td>
-                        <td className="py-2.5 px-3 font-mono text-[11px] text-emerald-400 max-w-sm truncate" title={f.url}>
+                        <td className="py-2.5 px-3 font-mono text-[11px] text-violet-600 dark:text-violet-400 max-w-sm truncate" title={f.url}>
                           [{f.method}] {f.url}
                         </td>
-                        <td className="py-2.5 px-3 font-mono text-slate-400 text-[11px] whitespace-nowrap">
+                        <td className="py-2.5 px-3 font-mono text-neutral-500 dark:text-neutral-400 text-[11px] whitespace-nowrap">
                           {f.cweId ? `CWE-${f.cweId}` : '—'}
                         </td>
                         <td className="py-2.5 px-3 whitespace-nowrap">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${getStatusBadge(f.status)}`}>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${getStatusBadge(f.status)}`}>
                             {f.status}
                           </span>
                         </td>
                         <td className="py-2.5 px-3 text-right whitespace-nowrap">
                           <button
                             onClick={() => openFindingModal(f)}
-                            className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-bold transition flex items-center space-x-1 ml-auto cursor-pointer"
+                            className="px-2.5 py-1 rounded-xl bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 text-xs font-bold transition flex items-center space-x-1 ml-auto cursor-pointer shadow-sm"
                           >
                             <Eye className="size-3" />
                             <span>Remediate</span>
@@ -382,54 +384,55 @@ export const OwaspZapTab: React.FC = () => {
 
       {/* ── Finding Remediation Details Modal ── */}
       {selectedFinding && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-2xl w-full max-h-[88vh] overflow-y-auto p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl max-w-2xl w-full max-h-[88vh] overflow-y-auto p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-200 dark:border-neutral-800">
               <div className="space-y-1">
                 <div className="flex items-center space-x-2">
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase border ${getRiskColor(selectedFinding.risk)}`}>
                     {selectedFinding.risk}
                   </span>
                   {selectedFinding.cweId && (
-                    <span className="text-[10px] font-mono text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                    <span className="text-[10px] font-mono font-bold text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded border border-neutral-200 dark:border-neutral-700">
                       CWE-{selectedFinding.cweId}
                     </span>
                   )}
                 </div>
-                <h3 className="font-bold text-white text-base">{selectedFinding.alert}</h3>
+                <h3 className="font-extrabold text-neutral-900 dark:text-white text-base leading-snug">{selectedFinding.alert}</h3>
               </div>
+
               <button
                 onClick={() => setSelectedFinding(null)}
-                className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition cursor-pointer"
+                className="p-1.5 rounded-xl bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-white transition cursor-pointer"
               >
                 <X className="size-4" />
               </button>
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 font-mono text-[11px] space-y-1">
-                <span className="text-slate-500 text-[10px] font-sans block">Affected URL & Parameter</span>
-                <div className="text-emerald-400 break-all">[{selectedFinding.method}] {selectedFinding.url}</div>
-                {selectedFinding.param && <div className="text-slate-300">Parameter: {selectedFinding.param}</div>}
+              <div className="p-3.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-700/80 font-mono text-[11px] space-y-1">
+                <span className="text-neutral-500 dark:text-neutral-400 text-[10px] font-sans font-semibold block">Affected URL & Parameter</span>
+                <div className="text-violet-600 dark:text-violet-400 break-all font-semibold">[{selectedFinding.method}] {selectedFinding.url}</div>
+                {selectedFinding.param && <div className="text-neutral-700 dark:text-neutral-300">Parameter: {selectedFinding.param}</div>}
               </div>
 
               {selectedFinding.description && (
-                <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-1">
-                  <span className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Vulnerability Description</span>
-                  <p className="text-slate-300 leading-relaxed font-sans">{selectedFinding.description}</p>
+                <div className="p-3.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-700/80 space-y-1">
+                  <span className="text-[10px] uppercase font-black text-neutral-500 dark:text-neutral-400 tracking-wider">Vulnerability Description</span>
+                  <p className="text-neutral-700 dark:text-neutral-300 leading-relaxed font-sans">{selectedFinding.description}</p>
                 </div>
               )}
 
               {selectedFinding.solution && (
-                <div className="p-3 rounded-lg bg-emerald-950/30 border border-emerald-500/30 space-y-1">
-                  <span className="text-[10px] uppercase font-black text-emerald-400 tracking-wider">Recommended Solution</span>
-                  <p className="text-emerald-200 leading-relaxed font-sans">{selectedFinding.solution}</p>
+                <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/80 space-y-1">
+                  <span className="text-[10px] uppercase font-black text-emerald-700 dark:text-emerald-400 tracking-wider">Recommended Solution</span>
+                  <p className="text-emerald-900 dark:text-emerald-200 leading-relaxed font-sans font-medium">{selectedFinding.solution}</p>
                 </div>
               )}
 
               {/* Remediation Lifecycle Status Updater */}
-              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
-                <span className="text-[10px] uppercase font-black text-slate-400 tracking-wider block">
+              <div className="p-4 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-700/80 space-y-3">
+                <span className="text-[10px] uppercase font-black text-neutral-500 dark:text-neutral-400 tracking-wider block">
                   Remediation Tracking
                 </span>
 
@@ -439,10 +442,10 @@ export const OwaspZapTab: React.FC = () => {
                       key={st}
                       type="button"
                       onClick={() => setFindingStatus(st)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shadow-sm ${
                         findingStatus === st
-                          ? 'bg-emerald-500 text-slate-950 font-black'
-                          : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                          ? 'bg-violet-600 text-white font-extrabold'
+                          : 'bg-white dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700'
                       }`}
                     >
                       {st}
@@ -451,23 +454,23 @@ export const OwaspZapTab: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-bold text-slate-400 block mb-1">Remediation / Audit Notes:</label>
+                  <label className="text-[11px] font-bold text-neutral-700 dark:text-neutral-300 block mb-1">Remediation / Audit Notes:</label>
                   <textarea
                     rows={2}
                     value={remediationNotes}
                     onChange={(e) => setRemediationNotes(e.target.value)}
                     placeholder="Document patch commit, PR, or security exception..."
-                    className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-slate-200 text-xs focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-2.5 text-neutral-800 dark:text-neutral-200 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 shadow-sm"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-800 flex justify-end space-x-2">
+            <div className="pt-3 border-t border-neutral-200 dark:border-neutral-800 flex justify-end space-x-2">
               <button
                 type="button"
                 onClick={() => setSelectedFinding(null)}
-                className="px-4 py-2 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 transition cursor-pointer"
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-white dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 transition cursor-pointer shadow-sm"
               >
                 Close
               </button>
@@ -475,7 +478,7 @@ export const OwaspZapTab: React.FC = () => {
                 type="button"
                 disabled={savingStatus}
                 onClick={handleSaveFindingStatus}
-                className="px-4 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black transition cursor-pointer disabled:opacity-50"
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-violet-600 hover:bg-violet-700 text-white transition cursor-pointer disabled:opacity-50 shadow-sm"
               >
                 {savingStatus ? 'Saving...' : 'Save Remediation Status'}
               </button>
@@ -488,4 +491,3 @@ export const OwaspZapTab: React.FC = () => {
 };
 
 export default OwaspZapTab;
-
