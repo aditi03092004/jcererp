@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useOutletContext } from 'react-router-dom';
+import { Socket } from 'socket.io-client';
 import agentshieldService, { SecurityIncidentItem, InvestigationNoteItem } from '../../../../services/agentshield.service';
 import {
   AlertTriangle,
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react';
 
 export const SecurityIncidentsTab: React.FC = () => {
+  const { socket, socketConnected } = useOutletContext<{ socket: Socket | null; socketConnected: boolean }>() || {};
   const [searchParams] = useSearchParams();
   const initialId = searchParams.get('id');
 
@@ -67,6 +69,42 @@ export const SecurityIncidentsTab: React.FC = () => {
   useEffect(() => {
     fetchIncidents();
   }, [statusFilter, severityFilter]);
+
+  // Real-time live incident streaming via Socket.IO
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewIncident = (incident: SecurityIncidentItem) => {
+      setIncidents((prev) => {
+        const existingIdx = prev.findIndex((i) => i.id === incident.id);
+        if (existingIdx >= 0) {
+          const updated = [...prev];
+          updated[existingIdx] = incident;
+          return updated;
+        }
+        return [incident, ...prev];
+      });
+
+      setSelectedIncident((prevSelected) => {
+        if (prevSelected && prevSelected.id === incident.id) {
+          return incident;
+        }
+        return prevSelected;
+      });
+    };
+
+    socket.on('agentshield:incident', handleNewIncident);
+    return () => {
+      socket.off('agentshield:incident', handleNewIncident);
+    };
+  }, [socket]);
+
+  // Polling fallback when WebSocket is offline
+  useEffect(() => {
+    if (socketConnected) return;
+    const interval = setInterval(fetchIncidents, 8000);
+    return () => clearInterval(interval);
+  }, [socketConnected, statusFilter, severityFilter, searchQuery]);
 
   const openIncidentDetail = async (id: string) => {
     try {

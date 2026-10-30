@@ -4,6 +4,7 @@ import { RuleResponsePolicy } from '../../models/agentshield/DetectionRule';
 
 export interface ActiveRestriction {
   clientIp: string;
+  targetUserId?: string | null;
   reason: string;
   ruleId: string;
   restrictedAt: Date;
@@ -18,8 +19,12 @@ export class ResponseService {
 
   /**
    * Checks whether a client IP is currently subject to an active temporary restriction
+   * Protects legitimate campus users sharing an institutional NAT IP.
    */
-  public isSourceRestricted(clientIp: string): { restricted: boolean; reason?: string; retryAfterSeconds?: number; policy?: RuleResponsePolicy } {
+  public isSourceRestricted(
+    clientIp: string,
+    callerUserId?: string
+  ): { restricted: boolean; reason?: string; retryAfterSeconds?: number; policy?: RuleResponsePolicy } {
     const record = this.temporaryRestrictions.get(clientIp);
     if (!record) {
       return { restricted: false };
@@ -29,6 +34,19 @@ export class ResponseService {
     if (now >= record.expiresAt.getTime()) {
       // Restriction has naturally expired
       this.temporaryRestrictions.delete(clientIp);
+      return { restricted: false };
+    }
+
+    // ── Campus NAT Isolation Guard ──
+    // 1. If restriction targeted a specific authenticated user (e.g. an account abusing APIs),
+    // other legitimate campus users sharing the same NAT IP must NOT be blocked.
+    if (record.targetUserId && callerUserId && callerUserId !== record.targetUserId) {
+      return { restricted: false };
+    }
+
+    // 2. If restriction was triggered by anonymous/unauthenticated probing on a shared campus IP,
+    // legitimate authenticated students/faculty/admins possessing valid JWT sessions are permitted.
+    if (!record.targetUserId && callerUserId) {
       return { restricted: false };
     }
 
@@ -49,7 +67,8 @@ export class ResponseService {
     clientIp: string,
     ruleId: string,
     policy: RuleResponsePolicy,
-    durationSeconds: number = 300 // default 5 minutes
+    durationSeconds: number = 300, // default 5 minutes
+    targetUserId?: string | null
   ): { actionApplied: string; durationSeconds: number } {
     if (policy === 'MONITOR') {
       return { actionApplied: 'MONITOR_ONLY', durationSeconds: 0 };
@@ -67,6 +86,7 @@ export class ResponseService {
 
     this.temporaryRestrictions.set(clientIp, {
       clientIp,
+      targetUserId: targetUserId || null,
       reason: `Automated protective response triggered by ${ruleId} (${policy})`,
       ruleId,
       restrictedAt: now,
@@ -75,7 +95,7 @@ export class ResponseService {
       hitCount,
     });
 
-    logger.warn(`[AgentShield Response] Applied ${policy} to source ${clientIp} for ${effectiveDuration}s (Rule: ${ruleId})`);
+    logger.warn(`[AgentShield Response] Applied ${policy} to source ${clientIp}${targetUserId ? ` (User: ${targetUserId})` : ''} for ${effectiveDuration}s (Rule: ${ruleId})`);
     return { actionApplied: policy, durationSeconds: effectiveDuration };
   }
 

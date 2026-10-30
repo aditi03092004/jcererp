@@ -112,6 +112,11 @@ export const BlockedRequestsTab: React.FC = () => {
                     <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-500/20 text-purple-300 border border-purple-500/40">
                       {item.policy}
                     </span>
+                    {item.targetUserId && (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-500/20 text-blue-300 border border-blue-500/40">
+                        User: {item.targetUserId}
+                      </span>
+                    )}
                     <span className="text-[11px] text-slate-400 font-sans">{item.reason}</span>
                   </div>
                   <div className="text-[11px] text-slate-500 font-sans">

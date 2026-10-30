@@ -19,10 +19,26 @@ export class CorrelationService {
 
   /**
    * Generates monotonic human-readable incident identifiers: INC-YYYY-XXXX
-   * Resilient to race conditions under concurrent requests.
+   * Uses PostgreSQL atomic sequence when available, with resilient fallback under concurrent requests.
    */
   public async generateIncidentNumber(): Promise<string> {
     const year = new Date().getFullYear();
+
+    // 1. Database-safe atomic sequence in PostgreSQL
+    try {
+      if (SecurityIncident.sequelize) {
+        const [results]: any = await SecurityIncident.sequelize.query(
+          "SELECT nextval('agentshield_incident_seq') AS seq"
+        );
+        if (results && results[0] && results[0].seq) {
+          const seqVal = String(results[0].seq).padStart(4, '0');
+          return `INC-${year}-${seqVal}`;
+        }
+      }
+    } catch {
+      // In SQLite, unit tests, or if sequence is not yet provisioned, fall through to query-based generation
+    }
+
     const latest = await SecurityIncident.findOne({
       where: {
         incidentNumber: {

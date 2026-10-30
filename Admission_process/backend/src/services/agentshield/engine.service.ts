@@ -244,13 +244,13 @@ export class AgentShieldEngine {
     // 3. Determine and execute proportionate response action
     let responseAction: EventResponseAction = 'MONITOR';
     if (rule.responsePolicy === 'RATE_LIMIT') {
-      responseService.applyProtectiveAction(signal.clientIp, ruleId, 'RATE_LIMIT', 300);
+      responseService.applyProtectiveAction(signal.clientIp, ruleId, 'RATE_LIMIT', 300, signal.userId);
       responseAction = 'RATE_LIMITED';
     } else if (rule.responsePolicy === 'BLOCK') {
-      responseService.applyProtectiveAction(signal.clientIp, ruleId, 'BLOCK', 600);
+      responseService.applyProtectiveAction(signal.clientIp, ruleId, 'BLOCK', 600, signal.userId);
       responseAction = 'BLOCKED';
     } else if (ruleId === 'RULE_HONEYPOT') {
-      responseService.applyProtectiveAction(signal.clientIp, ruleId, 'BLOCK', 600);
+      responseService.applyProtectiveAction(signal.clientIp, ruleId, 'BLOCK', 600, signal.userId);
       responseAction = 'HONEYPOT_TRIGGER';
     }
 

@@ -27,6 +27,20 @@ export async function ensureAgentShieldTables(sequelize: Sequelize): Promise<voi
 
     // 2. Security Incidents
     await sequelize.query(`
+      CREATE SEQUENCE IF NOT EXISTS "agentshield_incident_seq" START 1;
+      DO $$
+      BEGIN
+        BEGIN
+          PERFORM setval('agentshield_incident_seq', COALESCE((
+            SELECT MAX(CAST(SPLIT_PART("incidentNumber", '-', 3) AS INTEGER))
+            FROM "security_incidents"
+            WHERE "incidentNumber" ~ '^INC-[0-9]{4}-[0-9]+$'
+          ), 0) + 1, false);
+        EXCEPTION WHEN OTHERS THEN
+          NULL;
+        END;
+      END $$;
+
       CREATE TABLE IF NOT EXISTS "security_incidents" (
         "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         "incidentNumber" VARCHAR(32) NOT NULL UNIQUE,

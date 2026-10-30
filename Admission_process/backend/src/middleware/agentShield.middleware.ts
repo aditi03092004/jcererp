@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import agentShieldEngine, { SecuritySignal } from '../services/agentshield/engine.service';
 import responseService from '../services/agentshield/response.service';
 import { AuthenticatedRequest } from './auth.middleware';
+import { verifyToken } from '../utils/jwt.util';
 
 // Designated non-destructive canary honeypot endpoints
 const HONEYPOT_ROUTES = new Set([
@@ -14,19 +15,30 @@ const HONEYPOT_ROUTES = new Set([
 ]);
 
 /**
- * Extracts and sanitizes client IP using trusted proxy rules
+ * Extracts and sanitizes client IP using trusted proxy rules and IPv4 normalization
  */
 export function getClientIp(req: Request): string {
   // Respect express trust proxy configuration
-  if (req.ip) return req.ip;
+  let ip = req.ip;
 
-  const forwarded = req.headers['x-forwarded-for'];
-  if (typeof forwarded === 'string') {
-    const first = forwarded.split(',')[0].trim();
-    if (first) return first;
+  if (!ip) {
+    const forwarded = req.headers['x-forwarded-for'];
+    if (typeof forwarded === 'string') {
+      const first = forwarded.split(',')[0].trim();
+      if (first) ip = first;
+    }
   }
 
-  return req.socket?.remoteAddress || '127.0.0.1';
+  if (!ip) {
+    ip = req.socket?.remoteAddress || '127.0.0.1';
+  }
+
+  // Strip IPv6-mapped IPv4 prefix (::ffff:)
+  if (ip && ip.startsWith('::ffff:')) {
+    ip = ip.substring(7);
+  }
+
+  return ip || '127.0.0.1';
 }
 
 /**
@@ -65,8 +77,22 @@ export const agentShieldMiddleware = (req: Request, res: Response, next: NextFun
 
   const clientIp = getClientIp(req);
 
+  // Extract caller user ID if valid JWT is present to evaluate campus NAT exemptions safely
+  let callerUserId: string | undefined;
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    try {
+      const decoded: any = verifyToken(authHeader.split(' ')[1]);
+      if (decoded && decoded.id) {
+        callerUserId = decoded.id;
+      }
+    } catch {
+      // Invalid/expired token - treated as unauthenticated
+    }
+  }
+
   // ── 1. ACTIVE DEFENSIVE RESTRICTION CHECK ──
-  const restriction = responseService.isSourceRestricted(clientIp);
+  const restriction = responseService.isSourceRestricted(clientIp, callerUserId);
   if (restriction.restricted) {
     res.setHeader('Retry-After', String(restriction.retryAfterSeconds || 60));
     res.setHeader('X-AgentShield-Action', restriction.policy || 'RATE_LIMITED');

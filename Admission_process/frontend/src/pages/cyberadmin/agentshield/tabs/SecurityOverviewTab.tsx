@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
+import { Socket } from 'socket.io-client';
 import agentshieldService from '../../../../services/agentshield.service';
 import {
   ShieldAlert,
@@ -29,6 +30,7 @@ interface OverviewMetrics {
 }
 
 export const SecurityOverviewTab: React.FC<{ onOpenHealthModal: () => void }> = ({ onOpenHealthModal }) => {
+  const { socket } = useOutletContext<{ socket: Socket | null; socketConnected: boolean }>() || {};
   const navigate = useNavigate();
   const [metrics, setMetrics] = useState<OverviewMetrics | null>(null);
   const [recentIncidents, setRecentIncidents] = useState<any[]>([]);
@@ -61,6 +63,20 @@ export const SecurityOverviewTab: React.FC<{ onOpenHealthModal: () => void }> = 
     const interval = setInterval(fetchOverviewData, 10000);
     return () => clearInterval(interval);
   }, []);
+
+  // Instant refresh when live threat event or incident is received over WebSocket
+  useEffect(() => {
+    if (!socket) return;
+    const handleLivePulse = () => {
+      fetchOverviewData();
+    };
+    socket.on('agentshield:event', handleLivePulse);
+    socket.on('agentshield:incident', handleLivePulse);
+    return () => {
+      socket.off('agentshield:event', handleLivePulse);
+      socket.off('agentshield:incident', handleLivePulse);
+    };
+  }, [socket]);
 
   if (loading) {
     return (

@@ -644,7 +644,18 @@ describe('AgentShield Security Engine & Incident Management Suite', () => {
   // 9. Concurrency, Race Condition Resilience & Campus IP Isolation
   // =========================================================================
   describe('9. Concurrency, Race Condition Resilience & Campus IP Isolation', () => {
-    it('should generate monotonic incident numbers based on the highest existing sequence', async () => {
+    it('should generate incident numbers using PostgreSQL atomic sequence when available', async () => {
+      if (SecurityIncident.sequelize) {
+        jest.spyOn(SecurityIncident.sequelize, 'query').mockResolvedValue([[{ seq: '46' }]] as any);
+      }
+      const nextId = await correlationService.generateIncidentNumber();
+      expect(nextId).toBe(`INC-${new Date().getFullYear()}-0046`);
+    });
+
+    it('should generate monotonic incident numbers using fallback query if sequence is unavailable', async () => {
+      if (SecurityIncident.sequelize) {
+        jest.spyOn(SecurityIncident.sequelize, 'query').mockRejectedValue(new Error('Sequence not available'));
+      }
       jest.spyOn(SecurityIncident, 'findOne').mockResolvedValue({
         incidentNumber: 'INC-2026-0045',
       } as any);
@@ -726,6 +737,71 @@ describe('AgentShield Security Engine & Incident Management Suite', () => {
       // Both events were triggered on same IP '10.20.30.40'
       // If threshold triggers, each user has their own distinct identity attributed
       expect(correlatedSources.length).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should permit innocent campus students sharing a restricted NAT IP', () => {
+      // 1. Anonymous scanner on campus IP is restricted
+      responseService.applyProtectiveAction('203.0.113.99', 'RULE_ROUTE_PROBING', 'BLOCK', 300);
+
+      // Anonymous probe from that IP is blocked
+      const anonCheck = responseService.isSourceRestricted('203.0.113.99');
+      expect(anonCheck.restricted).toBe(true);
+      expect(anonCheck.policy).toBe('BLOCK');
+
+      // Authenticated campus student on the same IP is permitted
+      const studentCheck = responseService.isSourceRestricted('203.0.113.99', 'student-uuid-555');
+      expect(studentCheck.restricted).toBe(false);
+
+      // 2. If a specific user is targeted for restriction
+      responseService.applyProtectiveAction('203.0.113.88', 'RULE_INJECTION', 'BLOCK', 300, 'malicious-user-111');
+
+      // Malicious user is restricted
+      const badUserCheck = responseService.isSourceRestricted('203.0.113.88', 'malicious-user-111');
+      expect(badUserCheck.restricted).toBe(true);
+
+      // Other innocent student on the same IP is permitted
+      const innocentCheck = responseService.isSourceRestricted('203.0.113.88', 'innocent-student-222');
+      expect(innocentCheck.restricted).toBe(false);
+    });
+
+    it('should enforce strict immutability and secret redaction on SecurityAuditLog', async () => {
+      // Test immutability hooks
+      await expect((SecurityAuditLog as any).runHooks('beforeUpdate')).rejects.toThrow(/strictly append-only/i);
+      await expect((SecurityAuditLog as any).runHooks('beforeDestroy')).rejects.toThrow(/strictly append-only/i);
+
+      // Test deep redaction hook
+      const mockLog: any = {
+        details: {
+          secret: 'super-secret-key',
+          password: 'plainPassword123',
+          otp: '123456',
+          token: 'eyJhbGciOi...',
+          safeField: 'normal-value',
+          nested: {
+            cookie: 'session_cookie=abc',
+            data: 'visible',
+          },
+        },
+      };
+
+      await (SecurityAuditLog as any).runHooks('beforeCreate', mockLog);
+
+      expect(mockLog.details.secret).toBe('[REDACTED]');
+      expect(mockLog.details.password).toBe('[REDACTED]');
+      expect(mockLog.details.otp).toBe('[REDACTED]');
+      expect(mockLog.details.token).toBe('[REDACTED]');
+      expect(mockLog.details.safeField).toBe('normal-value');
+      expect(mockLog.details.nested.cookie).toBe('[REDACTED]');
+      expect(mockLog.details.nested.data).toBe('visible');
+    });
+
+    it('should normalize IPv6-mapped IPv4 addresses in getClientIp', () => {
+      const { getClientIp } = require('../middleware/agentShield.middleware');
+      const req: any = {
+        ip: '::ffff:192.168.1.55',
+        headers: {},
+      };
+      expect(getClientIp(req)).toBe('192.168.1.55');
     });
   });
 });

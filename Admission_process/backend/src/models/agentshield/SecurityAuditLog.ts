@@ -79,4 +79,54 @@ SecurityAuditLog.init(
   }
 );
 
+function redactSensitiveData(obj: any): any {
+  if (!obj || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(redactSensitiveData);
+  const SENSITIVE_KEYS = new Set([
+    'password', 'secret', 'token', 'otp', 'code', 'jwt', 'cookie',
+    'authorization', 'hash', 'apikey', 'api_key', 'credential', 'creditcard'
+  ]);
+  const sanitized: Record<string, any> = {};
+  for (const [key, val] of Object.entries(obj)) {
+    if (SENSITIVE_KEYS.has(key.toLowerCase())) {
+      sanitized[key] = '[REDACTED]';
+    } else if (typeof val === 'object' && val !== null) {
+      sanitized[key] = redactSensitiveData(val);
+    } else {
+      sanitized[key] = val;
+    }
+  }
+  return sanitized;
+}
+
+// ── Enforce Deep Redaction of Secrets, OTPs, Tokens, and Cookies ──
+SecurityAuditLog.beforeCreate((instance: SecurityAuditLog) => {
+  if (instance.previousState) {
+    instance.previousState = redactSensitiveData(instance.previousState);
+  }
+  if (instance.newState) {
+    instance.newState = redactSensitiveData(instance.newState);
+  }
+  if (instance.details) {
+    instance.details = redactSensitiveData(instance.details);
+  }
+});
+
+// ── Enforce True Audit Immutability: Records Cannot Be Modified or Deleted ──
+SecurityAuditLog.beforeUpdate(() => {
+  throw new Error('SecurityAuditLog records are strictly append-only and cannot be modified.');
+});
+
+SecurityAuditLog.beforeBulkUpdate(() => {
+  throw new Error('SecurityAuditLog records are strictly append-only and cannot be modified.');
+});
+
+SecurityAuditLog.beforeDestroy(() => {
+  throw new Error('SecurityAuditLog records are strictly append-only and cannot be deleted.');
+});
+
+SecurityAuditLog.beforeBulkDestroy(() => {
+  throw new Error('SecurityAuditLog records are strictly append-only and cannot be deleted.');
+});
+
 export default SecurityAuditLog;
