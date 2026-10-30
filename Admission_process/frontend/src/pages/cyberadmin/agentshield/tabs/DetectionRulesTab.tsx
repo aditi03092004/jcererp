@@ -91,14 +91,14 @@ export const DetectionRulesTab: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7 sm:space-y-8">
       {/* ── Top Bar ── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-neutral-200/80 dark:border-neutral-800">
         <div>
-          <h1 className="text-xl sm:text-2xl font-extrabold text-neutral-900 dark:text-white tracking-tight flex items-center space-x-2">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-neutral-900 dark:text-white tracking-tight flex items-center space-x-2">
             <span>Configurable Detection Rules</span>
           </h1>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+          <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1 font-medium">
             Manage detection parameters, anomaly thresholds, and automated defensive mitigation policies.
           </p>
         </div>
@@ -106,35 +106,35 @@ export const DetectionRulesTab: React.FC = () => {
         <button
           onClick={fetchRules}
           disabled={refreshing}
-          className="self-start sm:self-center flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 transition shadow-sm cursor-pointer disabled:opacity-50"
+          className="self-start sm:self-center flex items-center space-x-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 transition shadow-xs cursor-pointer disabled:opacity-50"
         >
-          <RefreshCw className={`size-3.5 ${refreshing ? 'animate-spin text-violet-600 dark:text-violet-400' : ''}`} />
-          <span>Refresh</span>
+          <RefreshCw className={`size-4 ${refreshing ? 'animate-spin text-violet-600 dark:text-violet-400' : ''}`} />
+          <span>Refresh Rules</span>
         </button>
       </div>
 
       {/* ── Rules Catalog Grid ── */}
       {loading ? (
-        <div className="py-20 text-center">
-          <div className="size-8 rounded-full border-2 border-violet-500/20 border-t-violet-600 animate-spin mx-auto" />
-          <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mt-2">Loading detection rules...</p>
+        <div className="py-24 text-center">
+          <div className="size-10 rounded-full border-3 border-violet-500/20 border-t-violet-600 animate-spin mx-auto" />
+          <p className="text-xs sm:text-sm font-bold text-neutral-500 uppercase tracking-wider mt-3">Loading detection rules...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
           {rules.map((rule) => (
             <div
               key={rule.id}
-              className={`p-5 rounded-2xl border bg-white dark:bg-neutral-900 transition shadow-sm hover:shadow-md space-y-4 flex flex-col justify-between ${
+              className={`p-6 sm:p-7 rounded-2xl border bg-white dark:bg-neutral-900 transition shadow-sm hover:shadow-md space-y-5 flex flex-col justify-between ${
                 rule.enabled
                   ? 'border-neutral-200/80 dark:border-neutral-800'
                   : 'border-neutral-200/50 dark:border-neutral-800/50 opacity-60'
               }`}
             >
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center space-x-2">
-                    <span className="font-mono text-xs font-extrabold text-violet-600 dark:text-violet-400">{rule.id}</span>
-                    <span className="text-[10px] uppercase font-extrabold px-2.5 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-2.5">
+                    <span className="font-mono text-xs sm:text-sm font-extrabold text-violet-700 dark:text-violet-400">{rule.id}</span>
+                    <span className="text-xs uppercase font-extrabold px-3 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300">
                       {rule.category}
                     </span>
                   </div>
@@ -147,47 +147,47 @@ export const DetectionRulesTab: React.FC = () => {
                       onChange={() => handleToggleEnabled(rule)}
                       className="sr-only peer"
                     />
-                    <div className="w-10 h-5.5 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:bg-violet-600 dark:bg-neutral-700" />
+                    <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600 dark:bg-neutral-700" />
                   </label>
                 </div>
 
-                <h3 className="text-sm font-extrabold text-neutral-900 dark:text-white mb-1.5">{rule.name}</h3>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed font-medium">{rule.description}</p>
+                <h3 className="text-base sm:text-lg font-extrabold text-neutral-900 dark:text-white mb-2">{rule.name}</h3>
+                <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed font-medium">{rule.description}</p>
               </div>
 
-              <div className="space-y-3 pt-3 border-t border-neutral-100 dark:border-neutral-800">
-                <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-                  <div className="p-2.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-700/80">
-                    <span className="text-neutral-500 dark:text-neutral-400 text-[10px] block font-sans font-semibold">Trigger Threshold</span>
+              <div className="space-y-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
+                <div className="grid grid-cols-2 gap-3 text-xs sm:text-sm font-mono">
+                  <div className="p-3 sm:p-3.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-700/80">
+                    <span className="text-neutral-500 dark:text-neutral-400 text-xs block font-sans font-semibold">Trigger Threshold</span>
                     <span className="text-neutral-900 dark:text-white font-bold">{rule.threshold} occurrences</span>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-700/80">
-                    <span className="text-neutral-500 dark:text-neutral-400 text-[10px] block font-sans font-semibold">Sliding Window</span>
+                  <div className="p-3 sm:p-3.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-700/80">
+                    <span className="text-neutral-500 dark:text-neutral-400 text-xs block font-sans font-semibold">Sliding Window</span>
                     <span className="text-neutral-900 dark:text-white font-bold">{rule.observationWindowSeconds}s window</span>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-700/80">
-                    <span className="text-neutral-500 dark:text-neutral-400 text-[10px] block font-sans font-semibold">Risk Assessment</span>
-                    <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase border mt-0.5 ${getRiskBadge(rule.riskLevel)}`}>
+                  <div className="p-3 sm:p-3.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-700/80">
+                    <span className="text-neutral-500 dark:text-neutral-400 text-xs block font-sans font-semibold">Risk Assessment</span>
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-extrabold uppercase border mt-1 ${getRiskBadge(rule.riskLevel)}`}>
                       {rule.riskLevel}
                     </span>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-700/80">
-                    <span className="text-neutral-500 dark:text-neutral-400 text-[10px] block font-sans font-semibold">Defensive Policy</span>
-                    <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 mt-0.5">
+                  <div className="p-3 sm:p-3.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-700/80">
+                    <span className="text-neutral-500 dark:text-neutral-400 text-xs block font-sans font-semibold">Defensive Policy</span>
+                    <span className="inline-block px-2 py-0.5 rounded-full text-xs font-extrabold uppercase bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 mt-1">
                       {rule.responsePolicy}
                     </span>
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between pt-1">
-                  <span className="text-[10px] text-neutral-400">
+                  <span className="text-xs text-neutral-400 font-medium">
                     Last triggered: {rule.lastTriggeredAt ? new Date(rule.lastTriggeredAt).toLocaleString() : 'Never'}
                   </span>
                   <button
                     onClick={() => setEditingRule(rule)}
-                    className="px-3 py-1.5 rounded-xl bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shadow-sm"
+                    className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 text-xs sm:text-sm font-bold transition flex items-center space-x-1.5 cursor-pointer shadow-xs"
                   >
-                    <Edit2 className="size-3" />
+                    <Edit2 className="size-3.5" />
                     <span>Configure</span>
                   </button>
                 </div>
@@ -200,74 +200,74 @@ export const DetectionRulesTab: React.FC = () => {
       {/* ── Edit Rule Modal ── */}
       {editingRule && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-neutral-200 dark:border-neutral-800">
-              <div className="flex items-center space-x-2.5">
-                <div className="p-2 rounded-xl bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-900/60">
-                  <Sliders className="size-5" />
+          <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl max-w-xl w-full p-6 sm:p-7 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3.5 border-b border-neutral-200 dark:border-neutral-800">
+              <div className="flex items-center space-x-3">
+                <div className="p-2.5 rounded-xl bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-900/60">
+                  <Sliders className="size-5 sm:size-6" />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-neutral-900 dark:text-white text-base">Configure Rule: {editingRule.id}</h3>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Update detection parameters and response policies</p>
+                  <h3 className="font-extrabold text-neutral-900 dark:text-white text-base sm:text-lg">Configure Rule: {editingRule.id}</h3>
+                  <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">Update detection parameters and response policies</p>
                 </div>
               </div>
               <button
                 onClick={() => setEditingRule(null)}
                 className="p-1.5 rounded-xl bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-white transition cursor-pointer"
               >
-                <X className="size-4" />
+                <X className="size-5" />
               </button>
             </div>
 
             {errorMsg && (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-300 text-xs font-semibold">
+              <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-300 text-xs sm:text-sm font-semibold">
                 {errorMsg}
               </div>
             )}
 
-            <form onSubmit={handleSaveEdit} className="space-y-4 text-xs">
+            <form onSubmit={handleSaveEdit} className="space-y-4 text-xs sm:text-sm">
               <div>
-                <label className="block text-neutral-700 dark:text-neutral-300 font-bold mb-1">Rule Description</label>
+                <label className="block text-neutral-700 dark:text-neutral-300 font-bold mb-1.5">Rule Description</label>
                 <textarea
                   rows={2}
                   value={editingRule.description}
                   onChange={(e) => setEditingRule({ ...editingRule, description: e.target.value })}
-                  className="w-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-2.5 text-neutral-800 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 shadow-sm"
+                  className="w-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-3 text-neutral-800 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 shadow-xs"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3.5">
                 <div>
-                  <label className="block text-neutral-700 dark:text-neutral-300 font-bold mb-1">Trigger Threshold (count)</label>
+                  <label className="block text-neutral-700 dark:text-neutral-300 font-bold mb-1.5">Trigger Threshold (count)</label>
                   <input
                     type="number"
                     min={1}
                     max={10000}
                     value={editingRule.threshold}
                     onChange={(e) => setEditingRule({ ...editingRule, threshold: parseInt(e.target.value, 10) || 1 })}
-                    className="w-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-2.5 text-neutral-800 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 shadow-sm"
+                    className="w-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-2.5 text-neutral-800 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 shadow-xs"
                   />
                 </div>
                 <div>
-                  <label className="block text-neutral-700 dark:text-neutral-300 font-bold mb-1">Window (seconds)</label>
+                  <label className="block text-neutral-700 dark:text-neutral-300 font-bold mb-1.5">Window (seconds)</label>
                   <input
                     type="number"
                     min={5}
                     max={86400}
                     value={editingRule.observationWindowSeconds}
                     onChange={(e) => setEditingRule({ ...editingRule, observationWindowSeconds: parseInt(e.target.value, 10) || 10 })}
-                    className="w-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-2.5 text-neutral-800 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 shadow-sm"
+                    className="w-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-2.5 text-neutral-800 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 shadow-xs"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3.5">
                 <div>
-                  <label className="block text-neutral-700 dark:text-neutral-300 font-bold mb-1">Risk Level Mapping</label>
+                  <label className="block text-neutral-700 dark:text-neutral-300 font-bold mb-1.5">Risk Level Mapping</label>
                   <select
                     value={editingRule.riskLevel}
                     onChange={(e) => setEditingRule({ ...editingRule, riskLevel: e.target.value as any })}
-                    className="w-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-2.5 text-neutral-800 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 shadow-sm"
+                    className="w-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-2.5 text-neutral-800 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 shadow-xs"
                   >
                     <option value="LOW">LOW</option>
                     <option value="MEDIUM">MEDIUM</option>
@@ -276,11 +276,11 @@ export const DetectionRulesTab: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-neutral-700 dark:text-neutral-300 font-bold mb-1">Defensive Response Policy</label>
+                  <label className="block text-neutral-700 dark:text-neutral-300 font-bold mb-1.5">Defensive Response Policy</label>
                   <select
                     value={editingRule.responsePolicy}
                     onChange={(e) => setEditingRule({ ...editingRule, responsePolicy: e.target.value as any })}
-                    className="w-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-2.5 text-neutral-800 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 shadow-sm"
+                    className="w-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-2.5 text-neutral-800 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 shadow-xs"
                   >
                     <option value="MONITOR">MONITOR (Telemetry Only)</option>
                     <option value="RATE_LIMIT">RATE_LIMIT (Temporary IP Cooldown)</option>
@@ -289,20 +289,20 @@ export const DetectionRulesTab: React.FC = () => {
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-neutral-200 dark:border-neutral-800 flex justify-end space-x-2">
+              <div className="pt-3.5 border-t border-neutral-200 dark:border-neutral-800 flex justify-end space-x-2.5">
                 <button
                   type="button"
                   onClick={() => setEditingRule(null)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold bg-white dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 transition cursor-pointer shadow-sm"
+                  className="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 transition cursor-pointer shadow-xs"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-4 py-2 rounded-xl text-xs font-bold bg-violet-600 hover:bg-violet-700 text-white transition cursor-pointer disabled:opacity-50 flex items-center space-x-1.5 shadow-sm"
+                  className="px-5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-violet-600 hover:bg-violet-700 text-white transition cursor-pointer disabled:opacity-50 flex items-center space-x-2 shadow-xs"
                 >
-                  <Save className="size-3.5" />
+                  <Save className="size-4" />
                   <span>{saving ? 'Saving...' : 'Save Configuration'}</span>
                 </button>
               </div>
