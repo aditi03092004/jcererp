@@ -36,3 +36,4 @@ export const AgentShieldDashboard: React.FC = () => {
 };
 
 export default AgentShieldDashboard;
+

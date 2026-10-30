@@ -19,17 +19,41 @@ export class CorrelationService {
 
   /**
    * Generates monotonic human-readable incident identifiers: INC-YYYY-XXXX
+   * Resilient to race conditions under concurrent requests.
    */
-  private async generateIncidentNumber(): Promise<string> {
+  public async generateIncidentNumber(): Promise<string> {
     const year = new Date().getFullYear();
-    const count = await SecurityIncident.count({
+    const latest = await SecurityIncident.findOne({
       where: {
         incidentNumber: {
           [Op.like]: `INC-${year}-%`,
         },
       },
+      order: [['incidentNumber', 'DESC']],
+      attributes: ['incidentNumber'],
     });
-    const seq = String(count + 1).padStart(4, '0');
+
+    let nextNum = 1;
+    if (latest && latest.incidentNumber) {
+      const parts = latest.incidentNumber.split('-');
+      if (parts.length === 3) {
+        const parsed = parseInt(parts[2], 10);
+        if (!isNaN(parsed) && parsed >= 1) {
+          nextNum = parsed + 1;
+        }
+      }
+    } else {
+      const count = await SecurityIncident.count({
+        where: {
+          incidentNumber: {
+            [Op.like]: `INC-${year}-%`,
+          },
+        },
+      });
+      nextNum = count + 1;
+    }
+
+    const seq = String(nextNum).padStart(4, '0');
     return `INC-${year}-${seq}`;
   }
 
@@ -125,33 +149,81 @@ export class CorrelationService {
       return incident;
     }
 
-    // Create a new incident
+    // Create a new incident with concurrency collision guard
     const incidentNumber = await this.generateIncidentNumber();
     const title = this.generateTitle(input.category, input.targetResource, input.severity);
     const recommendedSteps = input.recommendedSteps || this.getDefaultRecommendedSteps(input.category, input.targetResource);
 
-    incident = await SecurityIncident.create({
-      incidentNumber,
-      title,
-      category: input.category,
-      severity: input.severity,
-      status: 'NEW',
-      firstObservedAt: now,
-      lastObservedAt: now,
-      eventCount: 1,
-      sourceIdentifier: input.sourceIdentifier,
-      targetResource: input.targetResource,
-      evidenceSummary: `[${now.toISOString().slice(11, 19)}] ${input.evidenceExplanation}`,
-      recommendedSteps,
-      responseActionTaken: input.responseActionTaken,
-      investigationNotes: [],
-      resolutionSummary: null,
-      resolvedAt: null,
-      resolvedBy: null,
-    });
+    try {
+      incident = await SecurityIncident.create({
+        incidentNumber,
+        title,
+        category: input.category,
+        severity: input.severity,
+        status: 'NEW',
+        firstObservedAt: now,
+        lastObservedAt: now,
+        eventCount: 1,
+        sourceIdentifier: input.sourceIdentifier,
+        targetResource: input.targetResource,
+        evidenceSummary: `[${now.toISOString().slice(11, 19)}] ${input.evidenceExplanation}`,
+        recommendedSteps,
+        responseActionTaken: input.responseActionTaken,
+        investigationNotes: [],
+        resolutionSummary: null,
+        resolvedAt: null,
+        resolvedBy: null,
+      });
 
-    logger.warn(`[AgentShield] Created new security incident: ${incidentNumber} (${title}) [${input.severity}]`);
-    return incident;
+      logger.warn(`[AgentShield] Created new security incident: ${incidentNumber} (${title}) [${input.severity}]`);
+      return incident;
+    } catch (createErr: any) {
+      // Concurrency collision handler: If another request concurrently created an incident for this source/category
+      logger.warn(`[AgentShield] Incident creation collision detected, checking concurrent record: ${createErr.message}`);
+      const concurrentIncident = await SecurityIncident.findOne({
+        where: {
+          sourceIdentifier: input.sourceIdentifier,
+          category: input.category,
+          status: {
+            [Op.in]: ['NEW', 'INVESTIGATING'],
+          },
+          lastObservedAt: {
+            [Op.gte]: windowStart,
+          },
+        },
+        order: [['lastObservedAt', 'DESC']],
+      });
+
+      if (concurrentIncident) {
+        concurrentIncident.eventCount += 1;
+        concurrentIncident.lastObservedAt = now;
+        concurrentIncident.evidenceSummary = `${concurrentIncident.evidenceSummary}\n[${now.toISOString().slice(11, 19)}] ${input.evidenceExplanation}`;
+        await concurrentIncident.save();
+        return concurrentIncident;
+      }
+
+      // If incidentNumber collided with a different source's concurrent incident, retry with timestamp jitter
+      const fallbackNumber = `INC-${new Date().getFullYear()}-${String(Date.now() % 10000).padStart(4, '0')}`;
+      return await SecurityIncident.create({
+        incidentNumber: fallbackNumber,
+        title,
+        category: input.category,
+        severity: input.severity,
+        status: 'NEW',
+        firstObservedAt: now,
+        lastObservedAt: now,
+        eventCount: 1,
+        sourceIdentifier: input.sourceIdentifier,
+        targetResource: input.targetResource,
+        evidenceSummary: `[${now.toISOString().slice(11, 19)}] ${input.evidenceExplanation}`,
+        recommendedSteps,
+        responseActionTaken: input.responseActionTaken,
+        investigationNotes: [],
+        resolutionSummary: null,
+        resolvedAt: null,
+        resolvedBy: null,
+      });
+    }
   }
 
   private generateTitle(category: string, targetResource: string, severity: IncidentSeverity): string {

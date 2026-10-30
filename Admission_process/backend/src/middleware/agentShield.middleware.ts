@@ -51,13 +51,19 @@ export function sanitizeQuery(query: any): Record<string, any> {
  * AgentShield Real-Time Request Monitoring & Defensive Middleware
  */
 export const agentShieldMiddleware = (req: Request, res: Response, next: NextFunction): void => {
-  // Fast path OPTIONS preflight and static assets
-  if (req.method === 'OPTIONS' || req.path.startsWith('/uploads/')) {
+  const normalizedPath = (req.originalUrl || req.path || '').toLowerCase();
+
+  // Fast path OPTIONS preflight, static assets, and AgentShield administrative SOC management
+  if (
+    req.method === 'OPTIONS' ||
+    req.path.startsWith('/uploads/') ||
+    normalizedPath.startsWith('/api/v1/agentshield') ||
+    normalizedPath.startsWith('/api/agentshield')
+  ) {
     return next();
   }
 
   const clientIp = getClientIp(req);
-  const normalizedPath = req.path.toLowerCase();
 
   // ── 1. ACTIVE DEFENSIVE RESTRICTION CHECK ──
   const restriction = responseService.isSourceRestricted(clientIp);
@@ -117,13 +123,14 @@ export const agentShieldMiddleware = (req: Request, res: Response, next: NextFun
 
     if (!isApiRequest && !isRelevant404) return;
 
+    const authenticatedUser = (req as AuthenticatedRequest).user || (req as any).authenticatedUser || null;
     const signal: SecuritySignal = {
       timestamp: new Date(),
       method: req.method,
       route: originalUrl.split('?')[0],
       statusCode: res.statusCode,
-      role: (req as AuthenticatedRequest).user?.role || 'ANONYMOUS',
-      userId: (req as AuthenticatedRequest).user?.id || null,
+      role: authenticatedUser?.role || 'ANONYMOUS',
+      userId: authenticatedUser?.id || null,
       clientIp,
       correlationId: (req as any).correlationId || `req_${Date.now()}`,
       userAgent: req.headers['user-agent']?.slice(0, 255),

@@ -232,7 +232,9 @@ export class AgentShieldEngine {
     const incident = await correlationService.correlateEvent({
       category: rule.category,
       ruleId,
-      sourceIdentifier: signal.clientIp,
+      sourceIdentifier: signal.userId
+        ? `${signal.clientIp} [User: ${signal.userId}]`
+        : signal.clientIp,
       targetResource: signal.route,
       severity: risk.riskLevel as IncidentSeverity,
       evidenceExplanation: risk.explanation,

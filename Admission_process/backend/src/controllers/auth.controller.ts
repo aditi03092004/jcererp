@@ -381,7 +381,7 @@ export const checkPhone = async (req: Request, res: Response, next: NextFunction
 
 export const isDailyOtpRequiredRole = (role: string): boolean => {
   const normalized = (role || '').trim().toUpperCase();
-  return ['ADMIN', 'SUPER_ADMIN', 'PRINCIPAL', 'DEAN', 'HOD', 'TEACHER', 'FACULTY'].includes(normalized);
+  return ['ADMIN', 'SUPER_ADMIN', 'PRINCIPAL', 'DEAN', 'HOD', 'TEACHER', 'FACULTY', 'CYBERADMIN'].includes(normalized);
 };
 
 export const verifyDailyOtp = async (req: Request, res: Response, next: NextFunction): Promise<any> => {

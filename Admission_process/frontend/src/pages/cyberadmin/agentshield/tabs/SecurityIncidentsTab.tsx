@@ -496,3 +496,4 @@ export const SecurityIncidentsTab: React.FC = () => {
 };
 
 export default SecurityIncidentsTab;
+

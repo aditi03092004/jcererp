@@ -193,3 +193,4 @@ export const CyberAdminLayout: React.FC = () => {
 };
 
 export default CyberAdminLayout;
+

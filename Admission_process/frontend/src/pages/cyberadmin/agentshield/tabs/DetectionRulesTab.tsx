@@ -290,3 +290,4 @@ export const DetectionRulesTab: React.FC = () => {
 };
 
 export default DetectionRulesTab;
+

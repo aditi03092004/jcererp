@@ -29,8 +29,8 @@ describe('CyberAdmin Role, Authentication & RBAC Isolation Suite', () => {
       expect(user.status).toBe('ACTIVE');
     });
 
-    it('should NOT require daily OTP for CYBERADMIN', () => {
-      expect(isDailyOtpRequiredRole('CYBERADMIN')).toBe(false);
+    it('should require daily OTP for CYBERADMIN as an administrative role', () => {
+      expect(isDailyOtpRequiredRole('CYBERADMIN')).toBe(true);
     });
 
     it('should preserve daily OTP requirement for existing ERP administrative roles', () => {

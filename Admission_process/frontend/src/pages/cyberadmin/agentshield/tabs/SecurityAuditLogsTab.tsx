@@ -174,3 +174,4 @@ export const SecurityAuditLogsTab: React.FC = () => {
 };
 
 export default SecurityAuditLogsTab;
+
