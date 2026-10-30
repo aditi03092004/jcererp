@@ -4,6 +4,7 @@ import sequelize, { logDatabaseConfiguration } from './config/database';
 import { initRedis } from './config/redis';
 import attendanceBackupQueueService from './services/attendanceBackupQueue.service';
 import bitwiseMarksBackupQueueService from './services/bitwiseMarksBackupQueue.service';
+import http from 'http';
 
 const PORT = process.env.PORT || 5000;
 
@@ -17,6 +18,14 @@ async function startServer() {
 
     // 2. Initialize Redis connection
     await initRedis();
+    
+    // AgentShield Security Database Migration
+    try {
+      const { ensureAgentShieldTables } = await import('./models/agentshield/migration');
+      await ensureAgentShieldTables(sequelize);
+    } catch (shieldMigErr: any) {
+      console.warn('AgentShield tables migration notice:', shieldMigErr.message);
+    }
     
     // Safe migration: Add status, archivedAt, and archivedBy to teachers table
     try {
@@ -1833,7 +1842,20 @@ async function startServer() {
     }
 
     const portNum = typeof PORT === 'string' ? parseInt(PORT, 10) : PORT;
-    app.listen(portNum, '0.0.0.0', () => {
+    const server = http.createServer(app);
+    const { Server: SocketIOServer } = require('socket.io');
+    const io = new SocketIOServer(server, {
+      cors: {
+        origin: true,
+        credentials: true,
+      },
+    });
+    const { default: realtimeService } = await import('./services/agentshield/realtime.service');
+    const { default: agentShieldEngine } = await import('./services/agentshield/engine.service');
+    realtimeService.initialize(io);
+    await agentShieldEngine.initialize();
+
+    server.listen(portNum, '0.0.0.0', () => {
       console.log(`Server listening on port ${portNum}.`);
     });
   } catch (error) {

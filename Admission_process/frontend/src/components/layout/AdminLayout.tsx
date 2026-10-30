@@ -381,6 +381,9 @@ export const AdminLayout: React.FC = () => {
       title: 'SETTINGS',
       items: [
         { name: 'System Settings', path: '/admin/settings/system', icon: Settings },
+        ...((user?.role === 'SUPER_ADMIN' || user?.role === 'CYBERADMIN') ? [
+          { name: 'AgentShield Security', path: '/cyberadmin/agentshield', icon: Shield }
+        ] : []),
       ],
     },
   ];

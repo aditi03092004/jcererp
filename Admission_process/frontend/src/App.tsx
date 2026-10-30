@@ -18,6 +18,8 @@ import DeanLayout from './components/layout/DeanLayout';
 import HodLayout from './components/layout/HodLayout';
 import FacultyLayout from './components/layout/FacultyLayout';
 import StudentLayout from './components/layout/StudentLayout';
+import CyberAdminLayout from './components/layout/CyberAdminLayout';
+import AgentShieldDashboard from './pages/cyberadmin/agentshield/AgentShieldDashboard';
 import TopLoadingBar from './components/common/TopLoadingBar';
 import PwaManager from './components/PwaManager';
 
@@ -176,6 +178,9 @@ const RoleBasedRedirect: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const role = user?.role;
 
+  if (role === 'CYBERADMIN') {
+    return <Navigate to="/cyberadmin/agentshield" replace />;
+  }
   if (role === 'STUDENT') {
     return <Navigate to="/student/dashboard" replace />;
   }
@@ -472,6 +477,12 @@ export const App: React.FC = () => (
               <Route path="marks/assignments/config" element={<FacultyAssignmentConfigPage />} />
               <Route path="marks/final-internal" element={<FacultyFinalInternalMarksPage />} />
               <Route path="marks/external" element={<FacultyExternalMarksPage />} />
+            </Route>
+
+            {/* ── CyberAdmin AgentShield Portal ── */}
+            <Route path="cyberadmin" element={<CyberAdminLayout />}>
+              <Route index element={<Navigate to="agentshield" replace />} />
+              <Route path="agentshield" element={<AgentShieldDashboard />} />
             </Route>
 
             {/* ── Student Portal ── */}

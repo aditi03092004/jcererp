@@ -12,6 +12,8 @@ import { globalLimiter } from './middleware/rateLimit.middleware';
 import { loggingMiddleware } from './middleware/logging.middleware';
 import { idempotencyMiddleware } from './middleware/idempotency.middleware';
 import { errorHandler } from './middleware/errorHandler.middleware';
+import { agentShieldMiddleware } from './middleware/agentShield.middleware';
+import agentShieldRoutes from './routes/agentshield.routes';
 
 import fs from 'fs';
 import * as r2Service from './services/r2.service';
@@ -92,6 +94,7 @@ app.use('/api', globalLimiter);
 
 // 5. Idempotency Guard (Mutation double-submit protection)
 app.use('/api', idempotencyMiddleware);
+app.use(agentShieldMiddleware);
 
 // Serve public uploads (avatars, handbooks) directly
 app.use('/uploads/avatars', express.static(path.join(process.cwd(), 'uploads', 'avatars')));
@@ -211,6 +214,7 @@ const v1Router = express.Router();
 
 // Auth routes
 v1Router.use('/auth', authRoutes);
+v1Router.use('/agentshield', agentShieldRoutes);
 v1Router.get('/me/workspaces', authMiddleware, async (req: any, res: any, next: any) => {
   const { getUserWorkspaces } = await import('./controllers/auth.controller');
   return getUserWorkspaces(req, res, next);

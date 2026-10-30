@@ -71,6 +71,11 @@ export const ProtectedLayout: React.FC = () => {
     return <Navigate to="/unauthorized" replace />;
   }
 
+  // CyberAdmin routes: CYBERADMIN or SUPER_ADMIN
+  if (location.pathname.startsWith('/cyberadmin') && role !== 'CYBERADMIN' && role !== 'SUPER_ADMIN') {
+    return <Navigate to="/unauthorized" replace />;
+  }
+
   return (
     <>
       {user?.mustChangePassword && role !== 'HOD' && role !== 'FACULTY' && role !== 'TEACHER' && <ForcePasswordChange />}

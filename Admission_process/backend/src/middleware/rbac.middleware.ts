@@ -66,7 +66,10 @@ export const PERMISSION_MATRIX: Record<string, string[]> = {
     'view_results',
     'view_timetable'
   ],
-  CYBERADMIN: []
+  CYBERADMIN: [
+    // Strict isolation: Zero ERP administrative privileges.
+    // AgentShield endpoints are authorized via role check: authorizeRoles('CYBERADMIN', 'SUPER_ADMIN')
+  ],
 };
 
 /**

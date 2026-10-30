@@ -91,20 +91,10 @@ export const LoginPage: React.FC = () => {
       PRINCIPAL: '/principal/dashboard',
       PARENT: '/parent/dashboard',
       DEAN: '/dean/dashboard',
+      CYBERADMIN: '/cyberadmin/agentshield',
     };
 
     const normalizedRole = (userRole || '').trim().toUpperCase();
-
-    if (normalizedRole === 'CYBERADMIN') {
-      authService.logout();
-      dispatch(loginFailure(''));
-      const signalSafeUrl = import.meta.env.VITE_SIGNALSAFE_URL || 'http://localhost:5174';
-      setToast({ type: 'success', message: 'CyberAdmin credentials are for SignalSafe Campus. Redirecting...' });
-      setTimeout(() => {
-        window.location.href = signalSafeUrl;
-      }, 1500);
-      return;
-    }
 
     const targetDashboard = dashboardRoutes[normalizedRole];
 
@@ -114,6 +104,9 @@ export const LoginPage: React.FC = () => {
         redirectPath = targetDashboard;
       }
       if (redirectPath.startsWith('/student') && normalizedRole !== 'STUDENT') {
+        redirectPath = targetDashboard;
+      }
+      if (redirectPath.startsWith('/cyberadmin') && normalizedRole !== 'CYBERADMIN' && normalizedRole !== 'SUPER_ADMIN') {
         redirectPath = targetDashboard;
       }
       if (redirectPath.startsWith('/admin') && normalizedRole !== 'ADMIN' && normalizedRole !== 'SUPER_ADMIN') {
