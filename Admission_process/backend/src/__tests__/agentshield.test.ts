@@ -480,6 +480,44 @@ describe('AgentShield Security Engine & Incident Management Suite', () => {
       expect(JSON.stringify(sanitized)).not.toContain('secret-jwt-token-string');
       expect(JSON.stringify(sanitized)).not.toContain('654321');
     });
+
+    it('should observe and monitor ordinary successful requests (HTTP 200) without persisting them as security threats', async () => {
+      (agentShieldEngine.processSignal as any).mockRestore?.();
+      (agentShieldEngine as any).isInitialized = true;
+      const initialTotal = (agentShieldEngine as any).totalEventsProcessed;
+      const initialViolations = (agentShieldEngine as any).totalViolationsDetected;
+      const eventCreateSpy = jest.spyOn(SecurityEvent, 'create');
+
+      // Legitimate requests such as POST /api/auth/activity and GET /api/system/academic-years
+      await agentShieldEngine.processSignal({
+        timestamp: new Date(),
+        method: 'POST',
+        route: '/api/auth/activity',
+        statusCode: 200,
+        role: 'STUDENT',
+        userId: 'student-uuid-1',
+        clientIp: '10.0.0.1',
+        correlationId: 'req-200-1',
+      });
+
+      await agentShieldEngine.processSignal({
+        timestamp: new Date(),
+        method: 'GET',
+        route: '/api/system/academic-years',
+        statusCode: 200,
+        role: 'ANONYMOUS',
+        userId: null,
+        clientIp: '10.0.0.1',
+        correlationId: 'req-200-2',
+      });
+
+      // Total processed counter increments
+      expect((agentShieldEngine as any).totalEventsProcessed).toBe(initialTotal + 2);
+      // Violations detected counter remains unchanged
+      expect((agentShieldEngine as any).totalViolationsDetected).toBe(initialViolations);
+      // SecurityEvent is NOT created for nominal 200 OK traffic
+      expect(eventCreateSpy).not.toHaveBeenCalled();
+    });
   });
 
   // =========================================================================

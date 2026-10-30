@@ -131,7 +131,7 @@ export const LiveThreatMonitorTab: React.FC = () => {
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-0.5">
-            Real-time feed of observable backend request signals, automated detection triggers, and mitigation actions.
+            Real-time feed of detected security threats, anomalous request patterns, and automated mitigation actions. (Nominal 200 OK traffic is monitored by telemetry and excluded from threat logs).
           </p>
         </div>
 
