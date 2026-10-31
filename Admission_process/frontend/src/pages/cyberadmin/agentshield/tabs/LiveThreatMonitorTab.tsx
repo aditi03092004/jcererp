@@ -81,6 +81,19 @@ export const LiveThreatMonitorTab: React.FC = () => {
     return () => clearInterval(interval);
   }, [socketConnected, selectedRisk, selectedCategory, searchQuery]);
 
+  // Close inspector on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setInspectEvent(null);
+      }
+    };
+    if (inspectEvent) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [inspectEvent]);
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     fetchEvents();
@@ -269,37 +282,49 @@ export const LiveThreatMonitorTab: React.FC = () => {
 
       {/* ── Event Inspection Modal ── */}
       {inspectEvent && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl p-6 sm:p-7 space-y-5 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3.5 border-b border-neutral-200 dark:border-neutral-800">
+        <div
+          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={() => setInspectEvent(null)}
+        >
+          <div
+            className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl w-full max-w-[calc(100vw-32px)] sm:max-w-[700px] max-h-[calc(100vh-40px)] overflow-y-auto shadow-xl p-6 sm:p-7 space-y-5 animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 dark:border-neutral-800">
               <div className="flex items-center space-x-3">
-                <div className="p-2.5 rounded-xl bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-900/60">
-                  <ShieldAlert className="size-5 sm:size-6" />
+                <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-[#7C3AED] dark:text-purple-400 border border-purple-100 dark:border-purple-900/60">
+                  <ShieldAlert className="size-5" />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-neutral-900 dark:text-white text-base sm:text-lg">Security Event Telemetry Inspector</h3>
-                  <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">Detailed diagnostic payload and risk breakdown</p>
+                  <h3 className="font-bold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
+                    Security Event Telemetry Inspector
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Detailed diagnostic payload and risk breakdown
+                  </p>
                 </div>
               </div>
               <button
                 onClick={() => setInspectEvent(null)}
-                className="p-1.5 rounded-xl bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-white transition cursor-pointer"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-neutral-800 transition cursor-pointer"
+                title="Close (Esc)"
               >
                 <X className="size-5" />
               </button>
             </div>
 
             <div className="space-y-4 text-xs sm:text-sm">
-              {/* Risk explanation callout */}
-              <div className="p-4 sm:p-5 rounded-xl bg-violet-50/50 dark:bg-violet-950/20 border border-violet-100 dark:border-violet-900/40 space-y-2">
-                <span className="text-xs uppercase font-extrabold text-violet-700 dark:text-violet-400 tracking-wider">
+              {/* Explainable Risk Analysis Callout */}
+              <div className="p-4 sm:p-4.5 rounded-xl bg-purple-50/70 dark:bg-purple-950/25 border border-purple-100 dark:border-purple-900/40 space-y-2">
+                <span className="text-[11px] uppercase font-extrabold text-[#6D35E8] dark:text-purple-300 tracking-wider block">
                   Explainable Risk Analysis
                 </span>
-                <p className="text-neutral-800 dark:text-neutral-200 text-sm leading-relaxed font-medium">
+                <p className="text-slate-800 dark:text-slate-200 text-xs sm:text-sm leading-relaxed font-medium break-words [overflow-wrap:anywhere]">
                   {inspectEvent.evidence?.explanation || 'No detailed explanation provided for this event.'}
                 </p>
-                {inspectEvent.evidence?.factors && (
-                  <ul className="list-disc list-inside text-neutral-600 dark:text-neutral-400 text-xs sm:text-sm pt-1 space-y-1">
+                {inspectEvent.evidence?.factors && inspectEvent.evidence.factors.length > 0 && (
+                  <ul className="list-disc list-inside text-slate-600 dark:text-slate-300 text-xs pt-1 space-y-1 font-medium break-words [overflow-wrap:anywhere]">
                     {inspectEvent.evidence.factors.map((f: string, i: number) => (
                       <li key={i}>{f}</li>
                     ))}
@@ -307,48 +332,97 @@ export const LiveThreatMonitorTab: React.FC = () => {
                 )}
               </div>
 
-              {/* Key metadata grid */}
-              <div className="grid grid-cols-2 gap-3.5 font-mono">
-                <div className="p-3.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-700/80">
-                  <span className="text-neutral-500 dark:text-neutral-400 text-xs block font-sans font-semibold">Event ID</span>
-                  <span className="text-neutral-800 dark:text-neutral-200 select-all text-xs sm:text-sm">{inspectEvent.id}</span>
+              {/* Event Information Grid (Clean 2-Column Grid) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
+                {/* 1. Event ID */}
+                <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-neutral-800/40 border border-slate-200/80 dark:border-neutral-700/80 flex flex-col justify-center">
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-1">
+                    Event ID
+                  </span>
+                  <span className="font-mono text-xs font-semibold text-slate-800 dark:text-slate-200 break-all select-all leading-normal">
+                    {inspectEvent.id}
+                  </span>
                 </div>
-                <div className="p-3.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-700/80">
-                  <span className="text-neutral-500 dark:text-neutral-400 text-xs block font-sans font-semibold">Correlation ID</span>
-                  <span className="text-neutral-800 dark:text-neutral-200 select-all text-xs sm:text-sm">{inspectEvent.correlationId}</span>
+
+                {/* 2. Correlation ID */}
+                <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-neutral-800/40 border border-slate-200/80 dark:border-neutral-700/80 flex flex-col justify-center">
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-1">
+                    Correlation ID
+                  </span>
+                  <span className="font-mono text-xs font-semibold text-slate-800 dark:text-slate-200 break-all select-all leading-normal">
+                    {inspectEvent.correlationId || '—'}
+                  </span>
                 </div>
-                <div className="p-3.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-700/80">
-                  <span className="text-neutral-500 dark:text-neutral-400 text-xs block font-sans font-semibold">Client IP / Source</span>
-                  <span className="text-neutral-800 dark:text-neutral-200 font-bold text-xs sm:text-sm">{inspectEvent.clientIp}</span>
+
+                {/* 3. Client IP / Source */}
+                <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-neutral-800/40 border border-slate-200/80 dark:border-neutral-700/80 flex flex-col justify-center">
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-1">
+                    Client IP / Source
+                  </span>
+                  <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200 leading-normal">
+                    {inspectEvent.clientIp}
+                  </span>
                 </div>
-                <div className="p-3.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-700/80">
-                  <span className="text-neutral-500 dark:text-neutral-400 text-xs block font-sans font-semibold">Endpoint Target</span>
-                  <span className="text-violet-700 dark:text-violet-400 truncate block text-xs sm:text-sm font-semibold">
+
+                {/* 4. Endpoint Target */}
+                <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-neutral-800/40 border border-slate-200/80 dark:border-neutral-700/80 flex flex-col justify-center">
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-1">
+                    Endpoint Target
+                  </span>
+                  <span className="font-mono text-xs font-semibold text-[#6D35E8] dark:text-purple-400 break-words [overflow-wrap:anywhere] leading-normal">
                     [{inspectEvent.method}] {inspectEvent.route}
                   </span>
                 </div>
-                <div className="p-3.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-700/80">
-                  <span className="text-neutral-500 dark:text-neutral-400 text-xs block font-sans font-semibold">Role Attribution</span>
-                  <span className="text-neutral-800 dark:text-neutral-200 text-xs sm:text-sm">{inspectEvent.role}</span>
+
+                {/* 5. Role Attribution */}
+                <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-neutral-800/40 border border-slate-200/80 dark:border-neutral-700/80 flex flex-col justify-center">
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-1">
+                    Role Attribution
+                  </span>
+                  <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 uppercase leading-normal">
+                    {inspectEvent.role || 'ANONYMOUS'}
+                  </span>
                 </div>
-                <div className="p-3.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-700/80">
-                  <span className="text-neutral-500 dark:text-neutral-400 text-xs block font-sans font-semibold">Enforced Response Action</span>
-                  <span className="text-emerald-700 dark:text-emerald-400 font-bold text-xs sm:text-sm">{inspectEvent.responseAction}</span>
+
+                {/* 6. Enforced Response Action */}
+                <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-neutral-800/40 border border-slate-200/80 dark:border-neutral-700/80 flex flex-col justify-center">
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-1">
+                    Enforced Response Action
+                  </span>
+                  <span
+                    className={`text-xs font-extrabold uppercase leading-normal ${
+                      inspectEvent.responseAction === 'BLOCKED'
+                        ? 'text-red-700 dark:text-red-400'
+                        : inspectEvent.responseAction === 'RATE_LIMITED'
+                        ? 'text-orange-700 dark:text-orange-400'
+                        : String(inspectEvent.responseAction).includes('HONEYPOT')
+                        ? 'text-purple-700 dark:text-purple-400'
+                        : 'text-emerald-700 dark:text-emerald-400'
+                    }`}
+                  >
+                    {inspectEvent.responseAction}
+                  </span>
                 </div>
               </div>
 
+              {/* Optional User Agent */}
               {inspectEvent.userAgent && (
-                <div className="p-3.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-700/80 font-mono text-xs">
-                  <span className="text-neutral-500 dark:text-neutral-400 text-xs block font-sans font-semibold">User Agent</span>
-                  <span className="text-neutral-600 dark:text-neutral-400 break-all">{inspectEvent.userAgent}</span>
+                <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-neutral-800/40 border border-slate-200/80 dark:border-neutral-700/80">
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-1">
+                    User Agent
+                  </span>
+                  <span className="font-mono text-xs text-slate-600 dark:text-slate-400 break-all leading-normal">
+                    {inspectEvent.userAgent}
+                  </span>
                 </div>
               )}
             </div>
 
-            <div className="pt-3.5 border-t border-neutral-200 dark:border-neutral-800 flex justify-end">
+            {/* Footer and Close Action */}
+            <div className="pt-3.5 border-t border-slate-100 dark:border-neutral-800 flex justify-end">
               <button
                 onClick={() => setInspectEvent(null)}
-                className="px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-200 transition cursor-pointer"
+                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-[#172554] hover:bg-[#0f172a] text-white transition shadow-2xs cursor-pointer"
               >
                 Close Inspector
               </button>
