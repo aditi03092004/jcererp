@@ -20,7 +20,6 @@ import {
   ChevronDown,
   ExternalLink,
   Server,
-  ArrowLeftRight,
 } from 'lucide-react';
 import { ProfileAvatar } from '../common/ProfileAvatar';
 import { GlobalFooter } from '../common/GlobalFooter';
@@ -35,19 +34,14 @@ export const CyberAdminLayout: React.FC = () => {
   const [activeSocket, setActiveSocket] = useState<Socket | null>(null);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
 
   const profileMenuRef = useRef<HTMLDivElement>(null);
-  const workspaceMenuRef = useRef<HTMLDivElement>(null);
 
   // Close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
         setProfileMenuOpen(false);
-      }
-      if (workspaceMenuRef.current && !workspaceMenuRef.current.contains(event.target as Node)) {
-        setWorkspaceMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -58,7 +52,6 @@ export const CyberAdminLayout: React.FC = () => {
   useEffect(() => {
     setMobileMenuOpen(false);
     setProfileMenuOpen(false);
-    setWorkspaceMenuOpen(false);
   }, [location.pathname, location.search]);
 
   useEffect(() => {
@@ -286,45 +279,6 @@ export const CyberAdminLayout: React.FC = () => {
                 {socketConnected ? 'Live SOC Active' : 'Polling Active'}
               </span>
             </div>
-          </div>
-
-          {/* Switch Workspace */}
-          <div className="relative" ref={workspaceMenuRef}>
-            <button
-              onClick={() => setWorkspaceMenuOpen((prev) => !prev)}
-              className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl border border-neutral-200/70 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/60 text-[10px] font-bold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition shadow-2xs cursor-pointer"
-            >
-              <div className="flex items-center space-x-1.5 truncate">
-                <ArrowLeftRight className="w-3 h-3 text-violet-500" />
-                <span>Switch Workspace</span>
-              </div>
-              <ChevronDown className={`w-3 h-3 transition-transform ${workspaceMenuOpen ? 'rotate-180' : ''}`} />
-            </button>
-
-            {workspaceMenuOpen && (
-              <div className="absolute bottom-full mb-1.5 left-0 right-0 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-xl p-1.5 z-50 text-[11px] animate-in fade-in duration-100">
-                <button
-                  onClick={() => {
-                    setWorkspaceMenuOpen(false);
-                    navigate('/admin/dashboard');
-                  }}
-                  className="w-full flex items-center space-x-2 px-2.5 py-1.5 rounded-lg text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 font-semibold cursor-pointer text-left"
-                >
-                  <Server className="w-3.5 h-3.5 text-violet-600" />
-                  <span>ERP Admin Portal</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setWorkspaceMenuOpen(false);
-                    navigate('/faculty/dashboard');
-                  }}
-                  className="w-full flex items-center space-x-2 px-2.5 py-1.5 rounded-lg text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 font-semibold cursor-pointer text-left"
-                >
-                  <LayoutDashboard className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Faculty Workspace</span>
-                </button>
-              </div>
-            )}
           </div>
 
           {/* Sign Out */}
