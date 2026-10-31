@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useOutletContext } from 'react-router-dom';
 import { Socket } from 'socket.io-client';
 import agentshieldService, { SecurityEventItem } from '../../../../services/agentshield.service';
@@ -81,7 +82,7 @@ export const LiveThreatMonitorTab: React.FC = () => {
     return () => clearInterval(interval);
   }, [socketConnected, selectedRisk, selectedCategory, searchQuery]);
 
-  // Close inspector on Escape key
+  // Close inspector on Escape key & Lock background scroll
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -89,9 +90,14 @@ export const LiveThreatMonitorTab: React.FC = () => {
       }
     };
     if (inspectEvent) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
       window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = originalOverflow;
+        window.removeEventListener('keydown', handleKeyDown);
+      };
     }
-    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [inspectEvent]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -280,156 +286,159 @@ export const LiveThreatMonitorTab: React.FC = () => {
         )}
       </div>
 
-      {/* ── Event Inspection Modal ── */}
-      {inspectEvent && (
-        <div
-          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
-          onClick={() => setInspectEvent(null)}
-        >
+      {/* ── Event Inspection Modal (Portal to document.body for true viewport centering) ── */}
+      {inspectEvent &&
+        createPortal(
           <div
-            className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl w-full max-w-[calc(100vw-32px)] sm:max-w-[700px] max-h-[calc(100vh-40px)] overflow-y-auto shadow-xl p-6 sm:p-7 space-y-5 animate-in zoom-in-95 duration-150"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[99999] bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-150"
+            onClick={() => setInspectEvent(null)}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 dark:border-neutral-800">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-[#7C3AED] dark:text-purple-400 border border-purple-100 dark:border-purple-900/60">
-                  <ShieldAlert className="size-5" />
+            <div
+              className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl w-full max-w-[760px] max-h-[calc(100vh-40px)] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header (Pinned Top) */}
+              <div className="px-6 sm:px-7 py-4 border-b border-slate-100 dark:border-neutral-800 flex items-center justify-between shrink-0 bg-white dark:bg-neutral-900">
+                <div className="flex items-center space-x-3.5">
+                  <div className="size-10 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-[#7C3AED] dark:text-purple-400 border border-purple-100 dark:border-purple-900/60 flex items-center justify-center shrink-0">
+                    <ShieldAlert className="size-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
+                      Security Event Telemetry Inspector
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Detailed diagnostic payload and risk breakdown
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
-                    Security Event Telemetry Inspector
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Detailed diagnostic payload and risk breakdown
-                  </p>
-                </div>
+                <button
+                  onClick={() => setInspectEvent(null)}
+                  className="size-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-neutral-800 transition cursor-pointer shrink-0"
+                  title="Close (Esc)"
+                >
+                  <X className="size-5" />
+                </button>
               </div>
-              <button
-                onClick={() => setInspectEvent(null)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-neutral-800 transition cursor-pointer"
-                title="Close (Esc)"
-              >
-                <X className="size-5" />
-              </button>
-            </div>
 
-            <div className="space-y-4 text-xs sm:text-sm">
-              {/* Explainable Risk Analysis Callout */}
-              <div className="p-4 sm:p-4.5 rounded-xl bg-purple-50/70 dark:bg-purple-950/25 border border-purple-100 dark:border-purple-900/40 space-y-2">
-                <span className="text-[11px] uppercase font-extrabold text-[#6D35E8] dark:text-purple-300 tracking-wider block">
-                  Explainable Risk Analysis
-                </span>
-                <p className="text-slate-800 dark:text-slate-200 text-xs sm:text-sm leading-relaxed font-medium break-words [overflow-wrap:anywhere]">
-                  {inspectEvent.evidence?.explanation || 'No detailed explanation provided for this event.'}
-                </p>
-                {inspectEvent.evidence?.factors && inspectEvent.evidence.factors.length > 0 && (
-                  <ul className="list-disc list-inside text-slate-600 dark:text-slate-300 text-xs pt-1 space-y-1 font-medium break-words [overflow-wrap:anywhere]">
-                    {inspectEvent.evidence.factors.map((f: string, i: number) => (
-                      <li key={i}>{f}</li>
-                    ))}
-                  </ul>
+              {/* Scrollable Modal Content */}
+              <div className="overflow-y-auto px-6 sm:px-7 py-5 space-y-4.5 flex-1">
+                {/* Explainable Risk Analysis Callout */}
+                <div className="p-4 sm:p-4.5 rounded-xl bg-purple-50/70 dark:bg-purple-950/25 border border-purple-100 dark:border-purple-900/40 space-y-2 w-full">
+                  <span className="text-[11px] uppercase font-extrabold text-[#6D35E8] dark:text-purple-300 tracking-wider block">
+                    Explainable Risk Analysis
+                  </span>
+                  <p className="text-slate-800 dark:text-slate-200 text-xs sm:text-sm leading-relaxed font-medium break-words [overflow-wrap:anywhere]">
+                    {inspectEvent.evidence?.explanation || 'No detailed explanation provided for this event.'}
+                  </p>
+                  {inspectEvent.evidence?.factors && inspectEvent.evidence.factors.length > 0 && (
+                    <ul className="list-disc list-inside text-slate-600 dark:text-slate-300 text-xs pt-1 space-y-1 font-medium break-words [overflow-wrap:anywhere]">
+                      {inspectEvent.evidence.factors.map((f: string, i: number) => (
+                        <li key={i}>{f}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                {/* Event Information Grid (Clean 2-Column Grid with Equal Card Height & Wrap) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
+                  {/* 1. Event ID */}
+                  <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-neutral-800/40 border border-slate-200/80 dark:border-neutral-700/80 flex flex-col justify-between min-h-[76px]">
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-1">
+                      Event ID
+                    </span>
+                    <span className="font-mono text-xs font-semibold text-slate-800 dark:text-slate-200 break-all select-all leading-normal">
+                      {inspectEvent.id}
+                    </span>
+                  </div>
+
+                  {/* 2. Correlation ID */}
+                  <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-neutral-800/40 border border-slate-200/80 dark:border-neutral-700/80 flex flex-col justify-between min-h-[76px]">
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-1">
+                      Correlation ID
+                    </span>
+                    <span className="font-mono text-xs font-semibold text-slate-800 dark:text-slate-200 break-all select-all leading-normal">
+                      {inspectEvent.correlationId || '—'}
+                    </span>
+                  </div>
+
+                  {/* 3. Client IP / Source */}
+                  <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-neutral-800/40 border border-slate-200/80 dark:border-neutral-700/80 flex flex-col justify-between min-h-[76px]">
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-1">
+                      Client IP / Source
+                    </span>
+                    <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200 leading-normal">
+                      {inspectEvent.clientIp}
+                    </span>
+                  </div>
+
+                  {/* 4. Endpoint Target */}
+                  <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-neutral-800/40 border border-slate-200/80 dark:border-neutral-700/80 flex flex-col justify-between min-h-[76px]">
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-1">
+                      Endpoint Target
+                    </span>
+                    <span className="font-mono text-xs font-semibold text-[#6D35E8] dark:text-purple-400 break-words [overflow-wrap:anywhere] leading-normal">
+                      [{inspectEvent.method}] {inspectEvent.route}
+                    </span>
+                  </div>
+
+                  {/* 5. Role Attribution */}
+                  <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-neutral-800/40 border border-slate-200/80 dark:border-neutral-700/80 flex flex-col justify-between min-h-[76px]">
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-1">
+                      Role Attribution
+                    </span>
+                    <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 uppercase leading-normal">
+                      {inspectEvent.role || 'ANONYMOUS'}
+                    </span>
+                  </div>
+
+                  {/* 6. Enforced Response Action */}
+                  <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-neutral-800/40 border border-slate-200/80 dark:border-neutral-700/80 flex flex-col justify-between min-h-[76px]">
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-1">
+                      Enforced Response Action
+                    </span>
+                    <span
+                      className={`text-xs font-extrabold uppercase leading-normal ${
+                        inspectEvent.responseAction === 'BLOCKED'
+                          ? 'text-red-700 dark:text-red-400'
+                          : inspectEvent.responseAction === 'RATE_LIMITED'
+                          ? 'text-orange-700 dark:text-orange-400'
+                          : String(inspectEvent.responseAction).includes('HONEYPOT')
+                          ? 'text-purple-700 dark:text-purple-400'
+                          : 'text-emerald-700 dark:text-emerald-400'
+                      }`}
+                    >
+                      {inspectEvent.responseAction}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Optional User Agent */}
+                {inspectEvent.userAgent && (
+                  <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-neutral-800/40 border border-slate-200/80 dark:border-neutral-700/80">
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-1">
+                      User Agent
+                    </span>
+                    <span className="font-mono text-xs text-slate-600 dark:text-slate-400 break-all leading-normal">
+                      {inspectEvent.userAgent}
+                    </span>
+                  </div>
                 )}
               </div>
 
-              {/* Event Information Grid (Clean 2-Column Grid) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
-                {/* 1. Event ID */}
-                <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-neutral-800/40 border border-slate-200/80 dark:border-neutral-700/80 flex flex-col justify-center">
-                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-1">
-                    Event ID
-                  </span>
-                  <span className="font-mono text-xs font-semibold text-slate-800 dark:text-slate-200 break-all select-all leading-normal">
-                    {inspectEvent.id}
-                  </span>
-                </div>
-
-                {/* 2. Correlation ID */}
-                <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-neutral-800/40 border border-slate-200/80 dark:border-neutral-700/80 flex flex-col justify-center">
-                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-1">
-                    Correlation ID
-                  </span>
-                  <span className="font-mono text-xs font-semibold text-slate-800 dark:text-slate-200 break-all select-all leading-normal">
-                    {inspectEvent.correlationId || '—'}
-                  </span>
-                </div>
-
-                {/* 3. Client IP / Source */}
-                <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-neutral-800/40 border border-slate-200/80 dark:border-neutral-700/80 flex flex-col justify-center">
-                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-1">
-                    Client IP / Source
-                  </span>
-                  <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200 leading-normal">
-                    {inspectEvent.clientIp}
-                  </span>
-                </div>
-
-                {/* 4. Endpoint Target */}
-                <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-neutral-800/40 border border-slate-200/80 dark:border-neutral-700/80 flex flex-col justify-center">
-                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-1">
-                    Endpoint Target
-                  </span>
-                  <span className="font-mono text-xs font-semibold text-[#6D35E8] dark:text-purple-400 break-words [overflow-wrap:anywhere] leading-normal">
-                    [{inspectEvent.method}] {inspectEvent.route}
-                  </span>
-                </div>
-
-                {/* 5. Role Attribution */}
-                <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-neutral-800/40 border border-slate-200/80 dark:border-neutral-700/80 flex flex-col justify-center">
-                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-1">
-                    Role Attribution
-                  </span>
-                  <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 uppercase leading-normal">
-                    {inspectEvent.role || 'ANONYMOUS'}
-                  </span>
-                </div>
-
-                {/* 6. Enforced Response Action */}
-                <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-neutral-800/40 border border-slate-200/80 dark:border-neutral-700/80 flex flex-col justify-center">
-                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-1">
-                    Enforced Response Action
-                  </span>
-                  <span
-                    className={`text-xs font-extrabold uppercase leading-normal ${
-                      inspectEvent.responseAction === 'BLOCKED'
-                        ? 'text-red-700 dark:text-red-400'
-                        : inspectEvent.responseAction === 'RATE_LIMITED'
-                        ? 'text-orange-700 dark:text-orange-400'
-                        : String(inspectEvent.responseAction).includes('HONEYPOT')
-                        ? 'text-purple-700 dark:text-purple-400'
-                        : 'text-emerald-700 dark:text-emerald-400'
-                    }`}
-                  >
-                    {inspectEvent.responseAction}
-                  </span>
-                </div>
+              {/* Footer (Pinned Bottom) */}
+              <div className="px-6 sm:px-7 py-3.5 border-t border-slate-100 dark:border-neutral-800 flex items-center justify-end shrink-0 bg-slate-50/50 dark:bg-neutral-900/50">
+                <button
+                  onClick={() => setInspectEvent(null)}
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold bg-[#172554] hover:bg-[#0f172a] text-white transition shadow-2xs cursor-pointer"
+                >
+                  Close Inspector
+                </button>
               </div>
-
-              {/* Optional User Agent */}
-              {inspectEvent.userAgent && (
-                <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-neutral-800/40 border border-slate-200/80 dark:border-neutral-700/80">
-                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-1">
-                    User Agent
-                  </span>
-                  <span className="font-mono text-xs text-slate-600 dark:text-slate-400 break-all leading-normal">
-                    {inspectEvent.userAgent}
-                  </span>
-                </div>
-              )}
             </div>
-
-            {/* Footer and Close Action */}
-            <div className="pt-3.5 border-t border-slate-100 dark:border-neutral-800 flex justify-end">
-              <button
-                onClick={() => setInspectEvent(null)}
-                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-[#172554] hover:bg-[#0f172a] text-white transition shadow-2xs cursor-pointer"
-              >
-                Close Inspector
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
