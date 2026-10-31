@@ -22,6 +22,10 @@ import {
   FileCode2,
   Sliders,
   Sparkles,
+  Eye,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 
 interface OverviewMetrics {
@@ -45,6 +49,56 @@ export const SecurityOverviewTab: React.FC<{ onOpenHealthModal: () => void }> = 
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
 
+  // Sorting state for Active Incident Queue table
+  type SortField = 'severity' | 'time' | 'signals';
+  type SortOrder = 'asc' | 'desc';
+  const [sortField, setSortField] = useState<SortField>('time');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortOrder('desc');
+    }
+  };
+
+  const severityRank: Record<string, number> = {
+    CRITICAL: 4,
+    HIGH: 3,
+    MEDIUM: 2,
+    LOW: 1,
+  };
+
+  const sortedIncidents = [...recentIncidents].sort((a, b) => {
+    if (sortField === 'severity') {
+      const rankA = severityRank[a.severity?.toUpperCase()] || 0;
+      const rankB = severityRank[b.severity?.toUpperCase()] || 0;
+      return sortOrder === 'asc' ? rankA - rankB : rankB - rankA;
+    }
+    if (sortField === 'signals') {
+      const sigA = a.eventCount || 0;
+      const sigB = b.eventCount || 0;
+      return sortOrder === 'asc' ? sigA - sigB : sigB - sigA;
+    }
+    // Default: time
+    const timeA = new Date(a.lastObservedAt || a.createdAt).getTime();
+    const timeB = new Date(b.lastObservedAt || b.createdAt).getTime();
+    return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
+  });
+
+  const renderSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="size-3 text-slate-400 dark:text-neutral-500 inline ml-1" />;
+    }
+    return sortOrder === 'asc' ? (
+      <ArrowUp className="size-3 text-[#6D35E8] inline ml-1" />
+    ) : (
+      <ArrowDown className="size-3 text-[#6D35E8] inline ml-1" />
+    );
+  };
+
   const fetchOverviewData = async () => {
     try {
       setRefreshing(true);
@@ -53,7 +107,7 @@ export const SecurityOverviewTab: React.FC<{ onOpenHealthModal: () => void }> = 
         setMetrics(res.data);
       }
 
-      const incidentsRes = await agentshieldService.getIncidents({ limit: 6 });
+      const incidentsRes = await agentshieldService.getIncidents({ limit: 8 });
       if (incidentsRes.success) {
         setRecentIncidents(incidentsRes.data);
       }
@@ -252,73 +306,138 @@ export const SecurityOverviewTab: React.FC<{ onOpenHealthModal: () => void }> = 
                 <p className="text-xs text-slate-500">All institutional ERP telemetry signals are nominal.</p>
               </div>
             ) : (
-              <div className="divide-y divide-slate-100 dark:divide-neutral-800/80">
-                {recentIncidents.map((inc) => (
-                  <div
-                    key={inc.id}
-                    onClick={() => navigate(`/cyberadmin/agentshield?tab=incidents&id=${inc.id}`)}
-                    className="py-3 px-2 hover:bg-slate-50/80 dark:hover:bg-neutral-800/40 rounded-xl transition-all cursor-pointer flex flex-col gap-1.5 group"
-                  >
-                    {/* First Line: Incident ID, Severity Badge, Clean Incident Title, Status Badge, Time */}
-                    <div className="flex items-center justify-between gap-2 min-w-0">
-                      <div className="flex items-center gap-2 min-w-0 overflow-hidden">
-                        <span className="font-mono text-xs font-bold text-[#6D35E8] dark:text-purple-400 shrink-0">
-                          {inc.incidentNumber}
-                        </span>
-                        <span
-                          className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border shrink-0 ${
-                            inc.severity === 'CRITICAL'
-                              ? 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300'
-                              : inc.severity === 'HIGH'
-                              ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300'
-                              : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-neutral-800 dark:text-slate-300'
-                          }`}
-                        >
-                          {inc.severity}
-                        </span>
-                        <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate group-hover:text-[#6D35E8] transition-colors">
+              <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-neutral-800">
+                <table className="w-full text-left border-collapse min-w-[760px]">
+                  <thead>
+                    <tr className="bg-slate-50/90 dark:bg-neutral-800/60 border-b border-slate-200 dark:border-neutral-800 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                      <th className="py-2.5 px-3">Incident ID</th>
+                      <th
+                        className="py-2.5 px-3 cursor-pointer select-none hover:text-[#6D35E8] transition-colors"
+                        onClick={() => handleSort('severity')}
+                        title="Sort by Severity"
+                      >
+                        <div className="flex items-center gap-1">
+                          <span>Severity</span>
+                          {renderSortIcon('severity')}
+                        </div>
+                      </th>
+                      <th className="py-2.5 px-3">Incident</th>
+                      <th className="py-2.5 px-3">Source IP</th>
+                      <th className="py-2.5 px-3">Target Endpoint</th>
+                      <th
+                        className="py-2.5 px-3 text-center cursor-pointer select-none hover:text-[#6D35E8] transition-colors"
+                        onClick={() => handleSort('signals')}
+                        title="Sort by Signals count"
+                      >
+                        <div className="flex items-center justify-center gap-1">
+                          <span>Signals</span>
+                          {renderSortIcon('signals')}
+                        </div>
+                      </th>
+                      <th className="py-2.5 px-3 text-center">Status</th>
+                      <th
+                        className="py-2.5 px-3 text-right cursor-pointer select-none hover:text-[#6D35E8] transition-colors"
+                        onClick={() => handleSort('time')}
+                        title="Sort by Time"
+                      >
+                        <div className="flex items-center justify-end gap-1">
+                          <span>Time</span>
+                          {renderSortIcon('time')}
+                        </div>
+                      </th>
+                      <th className="py-2.5 px-3 text-right">Inspect</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-neutral-800 bg-white dark:bg-neutral-900 text-xs">
+                    {sortedIncidents.map((inc) => (
+                      <tr
+                        key={inc.id}
+                        onClick={() => navigate(`/cyberadmin/agentshield?tab=incidents&id=${inc.id}`)}
+                        className="hover:bg-slate-50/80 dark:hover:bg-neutral-800/40 transition-colors cursor-pointer group"
+                      >
+                        {/* Incident ID */}
+                        <td className="py-2.5 px-3 font-mono font-bold text-[#6D35E8] dark:text-purple-400 whitespace-nowrap">
+                          <span className="hover:underline">
+                            {inc.incidentNumber}
+                          </span>
+                        </td>
+
+                        {/* Severity */}
+                        <td className="py-2.5 px-3 whitespace-nowrap">
+                          <span
+                            className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${
+                              inc.severity === 'CRITICAL'
+                                ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800'
+                                : inc.severity === 'HIGH'
+                                ? 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-800'
+                                : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-neutral-800 dark:text-slate-400 dark:border-neutral-700'
+                            }`}
+                          >
+                            {inc.severity}
+                          </span>
+                        </td>
+
+                        {/* Incident Title */}
+                        <td className="py-2.5 px-3 font-semibold text-slate-800 dark:text-white max-w-[200px] truncate" title={inc.title}>
                           {cleanIncidentTitle(inc.title)}
-                        </h3>
-                      </div>
+                        </td>
 
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span
-                          className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border shrink-0 ${
-                            inc.status === 'NEW'
-                              ? 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30'
-                              : inc.status === 'INVESTIGATING'
-                              ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30'
-                              : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30'
-                          }`}
+                        {/* Source IP */}
+                        <td className="py-2.5 px-3 font-mono text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                          {inc.sourceIdentifier}
+                        </td>
+
+                        {/* Target Endpoint */}
+                        <td
+                          className="py-2.5 px-3 font-mono text-slate-600 dark:text-slate-400 max-w-[200px] truncate"
+                          title={inc.targetResource}
                         >
-                          {inc.status}
-                        </span>
-                        <span className="text-[11px] font-mono text-slate-400 dark:text-neutral-500 hidden sm:inline">
-                          {new Date(inc.lastObservedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-                    </div>
+                          {inc.targetResource || '—'}
+                        </td>
 
-                    {/* Second Line: Source IP | Target Endpoint | Signals | Time */}
-                    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-slate-500 dark:text-slate-400 font-medium">
-                      <span>
-                        Source: <span className="font-mono font-semibold text-slate-700 dark:text-slate-200">{inc.sourceIdentifier}</span>
-                      </span>
-                      <span className="text-slate-300 dark:text-slate-700">|</span>
-                      <span className="truncate max-w-[200px] sm:max-w-xs md:max-w-sm" title={inc.targetResource}>
-                        Target: <span className="font-mono text-slate-700 dark:text-slate-300">{inc.targetResource}</span>
-                      </span>
-                      <span className="text-slate-300 dark:text-slate-700">|</span>
-                      <span>
-                        Signals: <span className="font-semibold text-slate-800 dark:text-slate-200">{inc.eventCount}</span>
-                      </span>
-                      <span className="text-slate-300 dark:text-slate-700 sm:hidden">|</span>
-                      <span className="text-slate-400 text-[11px] sm:hidden">
-                        {new Date(inc.lastObservedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                        {/* Signals */}
+                        <td className="py-2.5 px-3 text-center font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                          {inc.eventCount}
+                        </td>
+
+                        {/* Status */}
+                        <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                          <span
+                            className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${
+                              inc.status === 'NEW'
+                                ? 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30'
+                                : inc.status === 'INVESTIGATING'
+                                ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30'
+                                : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30'
+                            }`}
+                          >
+                            {inc.status}
+                          </span>
+                        </td>
+
+                        {/* Time */}
+                        <td className="py-2.5 px-3 text-right font-mono text-slate-500 dark:text-neutral-400 whitespace-nowrap text-[11px]">
+                          {new Date(inc.lastObservedAt || inc.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                        </td>
+
+                        {/* Inspect Action */}
+                        <td className="py-2.5 px-3 text-right whitespace-nowrap">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/cyberadmin/agentshield?tab=incidents&id=${inc.id}`);
+                            }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-[#6D35E8] bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 dark:hover:bg-purple-900/60 dark:text-purple-300 transition cursor-pointer"
+                            title="Inspect Incident"
+                          >
+                            <Eye className="size-3.5" />
+                            <span>Inspect</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
