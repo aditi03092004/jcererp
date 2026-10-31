@@ -226,25 +226,22 @@ export const CyberAdminLayout: React.FC = () => {
                       key={item.id}
                       to={item.path}
                       onClick={() => setMobileMenuOpen(false)}
-                      className={`w-full h-[38px] px-3.5 rounded-xl flex items-center justify-between transition-all duration-150 relative group border ${
+                      className={`agentshield-nav-item w-full h-[38px] px-3.5 rounded-xl flex items-center justify-between transition-all duration-150 relative border border-transparent select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7C3AED] focus-visible:ring-offset-1 ${
                         isActive
-                          ? 'bg-purple-50 dark:bg-purple-950/40 text-[#6D35E8] dark:text-purple-300 font-bold border-purple-200/80 dark:border-purple-800/60 shadow-2xs'
-                          : 'border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-neutral-800/60 hover:text-slate-900 dark:hover:text-white'
+                          ? 'active bg-[#7C3AED] text-white font-bold shadow-sm shadow-purple-500/25'
+                          : 'bg-transparent text-[#252525] hover:bg-[#F3E8FF] hover:text-[#7C3AED]'
                       }`}
                     >
-                      {isActive && (
-                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 bg-[#6D35E8] rounded-r shadow-xs shadow-[#6D35E8]/30" />
-                      )}
                       <div className="flex items-center space-x-3 min-w-0">
                         <Icon
-                          className={`w-4 h-4 flex-shrink-0 transition-colors duration-150 ${
-                            isActive ? 'text-[#6D35E8] dark:text-purple-300' : 'text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200'
+                          className={`agentshield-nav-icon w-4 h-4 flex-shrink-0 transition-colors duration-150 ${
+                            isActive ? 'text-white' : 'text-[#525252]'
                           }`}
                           strokeWidth={isActive ? 2.5 : 2}
                         />
                         <span
-                          className={`text-[11px] font-semibold transition-colors duration-150 truncate ${
-                            isActive ? 'text-[#6D35E8] dark:text-purple-300 font-bold' : 'text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white'
+                          className={`agentshield-nav-label text-[11px] transition-colors duration-150 truncate ${
+                            isActive ? 'text-white font-bold' : 'text-[#252525] font-semibold'
                           }`}
                         >
                           {item.label}

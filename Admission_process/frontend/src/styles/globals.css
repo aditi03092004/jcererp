@@ -431,16 +431,16 @@ input.light-input-mode::placeholder,
 /* Ensure SVG icons inside group-hover elements with white text get white stroke & color */
 .group:hover .group-hover\:text-white,
 .group:hover .group-hover\:\!text-white,
-.group:hover [class*="group-hover:text-white"],
-.group:hover [class*="group-hover:\!text-white"] {
+.dark .group:hover .dark\:group-hover\:text-white,
+.dark .group:hover .dark\:group-hover\:\!text-white {
   color: #ffffff !important;
   stroke: #ffffff !important;
 }
 
 .group:hover .group-hover\:text-white svg,
 .group:hover .group-hover\:\!text-white svg,
-.group:hover [class*="group-hover:text-white"] svg,
-.group:hover [class*="group-hover:\!text-white"] svg {
+.dark .group:hover .dark\:group-hover\:text-white svg,
+.dark .group:hover .dark\:group-hover\:\!text-white svg {
   color: #ffffff !important;
   stroke: #ffffff !important;
 }
@@ -1124,3 +1124,63 @@ table tbody td[class*="text-left"],
 }
 
 
+
+
+/* ==========================================================================
+   AgentShield CyberAdmin Sidebar Navigation
+   Strict state isolation: Normal (#252525) -> Hover (#F3E8FF bg, #7C3AED text/icon) -> Active (#7C3AED bg, #FFFFFF text/icon)
+   ========================================================================== */
+.agentshield-nav-item {
+  transition: all 150ms ease-in-out !important;
+}
+
+/* Inactive normal state */
+.agentshield-nav-item:not(.active) {
+  background-color: transparent !important;
+  color: #252525 !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+.agentshield-nav-item:not(.active) .agentshield-nav-icon,
+.agentshield-nav-item:not(.active) svg {
+  color: #525252 !important;
+  stroke: #525252 !important;
+  transition: color 150ms ease-in-out, stroke 150ms ease-in-out !important;
+}
+.agentshield-nav-item:not(.active) .agentshield-nav-label {
+  color: #252525 !important;
+  transition: color 150ms ease-in-out !important;
+}
+
+/* Inactive hover state */
+.agentshield-nav-item:not(.active):hover {
+  background-color: #F3E8FF !important;
+  color: #7C3AED !important;
+}
+.agentshield-nav-item:not(.active):hover .agentshield-nav-icon,
+.agentshield-nav-item:not(.active):hover svg {
+  color: #7C3AED !important;
+  stroke: #7C3AED !important;
+}
+.agentshield-nav-item:not(.active):hover .agentshield-nav-label {
+  color: #7C3AED !important;
+}
+
+/* Active state (selected menu) */
+.agentshield-nav-item.active,
+.agentshield-nav-item.active:hover {
+  background-color: #7C3AED !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 3px 0 rgba(124, 58, 237, 0.25) !important;
+}
+.agentshield-nav-item.active .agentshield-nav-icon,
+.agentshield-nav-item.active svg,
+.agentshield-nav-item.active:hover .agentshield-nav-icon,
+.agentshield-nav-item.active:hover svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+.agentshield-nav-item.active .agentshield-nav-label,
+.agentshield-nav-item.active:hover .agentshield-nav-label {
+  color: #ffffff !important;
+}
