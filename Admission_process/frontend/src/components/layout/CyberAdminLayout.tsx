@@ -6,6 +6,7 @@ import { RootState } from '../../store';
 import { io, Socket } from 'socket.io-client';
 import {
   LayoutDashboard,
+  BarChart3,
   Radio,
   AlertTriangle,
   ShieldAlert,
@@ -108,6 +109,7 @@ export const CyberAdminLayout: React.FC = () => {
 
   const navItems = [
     { id: 'overview', label: 'Security Overview', icon: LayoutDashboard, path: '/cyberadmin/agentshield?tab=overview' },
+    { id: 'analytics', label: 'Security Analytics', icon: BarChart3, path: '/cyberadmin/agentshield?tab=analytics' },
     { id: 'live', label: 'Live Threat Monitor', icon: Radio, path: '/cyberadmin/agentshield?tab=live' },
     { id: 'incidents', label: 'Security Incidents', icon: AlertTriangle, path: '/cyberadmin/agentshield?tab=incidents' },
     { id: 'blocked', label: 'Blocked & Restricted', icon: ShieldAlert, path: '/cyberadmin/agentshield?tab=blocked' },
@@ -120,6 +122,8 @@ export const CyberAdminLayout: React.FC = () => {
 
   const getPageTitle = () => {
     switch (currentTab) {
+      case 'analytics':
+        return 'Security Analytics';
       case 'live':
         return 'Live Threat Monitor';
       case 'incidents':
@@ -140,6 +144,8 @@ export const CyberAdminLayout: React.FC = () => {
 
   const getPageSubtitle = () => {
     switch (currentTab) {
+      case 'analytics':
+        return 'Institutional threat telemetry trends, attack vectors, and automated defense analytics';
       case 'live':
         return 'Monitor detected security threats, suspicious request patterns, and mitigation actions in real time';
       case 'incidents':
@@ -166,7 +172,7 @@ export const CyberAdminLayout: React.FC = () => {
   return (
     <div
       data-portal="cyberadmin"
-      className="portal-table-center min-h-screen max-w-full overflow-x-hidden flex text-neutral-900 dark:text-neutral-100 transition-colors duration-300 font-sans pb-6 pr-6 bg-slate-50 dark:bg-neutral-950"
+      className="portal-table-center min-h-screen max-w-full overflow-x-hidden flex text-neutral-900 dark:text-neutral-100 transition-colors duration-300 font-sans pb-6 pr-6 bg-[#F4F5FA] dark:bg-neutral-950"
     >
       {/* ── MOBILE BACKDROP ── */}
       {mobileMenuOpen && (
@@ -229,23 +235,23 @@ export const CyberAdminLayout: React.FC = () => {
                       onClick={() => setMobileMenuOpen(false)}
                       className={`w-full h-[38px] px-3.5 rounded-xl flex items-center justify-between transition-all duration-150 relative group border ${
                         isActive
-                          ? 'bg-gradient-to-r from-[#070e22] via-[#0c1a40] to-[#0f245c] text-white font-bold shadow-md shadow-[#070e22]/25 border-[#1e3a8a]/50'
-                          : 'border-transparent text-neutral-600 dark:text-neutral-400 hover:bg-gradient-to-r hover:from-[#070e22] hover:via-[#0c1a40] hover:to-[#0f245c] hover:!text-white hover:border-[#1e3a8a]/40 hover:shadow-sm'
+                          ? 'bg-purple-50 dark:bg-purple-950/40 text-[#6D35E8] dark:text-purple-300 font-bold border-purple-200/80 dark:border-purple-800/60 shadow-2xs'
+                          : 'border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-neutral-800/60 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
                       {isActive && (
-                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3.5px] h-4.5 bg-cyan-400 rounded-r shadow-xs shadow-cyan-400/50" />
+                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 bg-[#6D35E8] rounded-r shadow-xs shadow-[#6D35E8]/30" />
                       )}
                       <div className="flex items-center space-x-3 min-w-0">
                         <Icon
                           className={`w-4 h-4 flex-shrink-0 transition-colors duration-150 ${
-                            isActive ? 'text-cyan-300' : 'text-neutral-400 group-hover:!text-cyan-300'
+                            isActive ? 'text-[#6D35E8] dark:text-purple-300' : 'text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200'
                           }`}
                           strokeWidth={isActive ? 2.5 : 2}
                         />
                         <span
                           className={`text-[11px] font-semibold transition-colors duration-150 truncate ${
-                            isActive ? 'text-white font-bold' : 'text-neutral-700 dark:text-neutral-300 group-hover:!text-white'
+                            isActive ? 'text-[#6D35E8] dark:text-purple-300 font-bold' : 'text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white'
                           }`}
                         >
                           {item.label}

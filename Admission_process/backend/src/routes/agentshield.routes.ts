@@ -24,6 +24,7 @@ const requireCyberAdmin = [authMiddleware, authorizeRoles('CYBERADMIN', 'SUPER_A
 
 // ── 1. Security Overview & Health ──
 router.get('/overview', requireCyberAdmin, agentShieldCtrl.getOverview);
+router.get('/analytics', requireCyberAdmin, agentShieldCtrl.getAnalytics);
 router.get('/health', requireCyberAdmin, agentShieldCtrl.getHealthDiagnostics);
 
 // ── 2. Security Events ──

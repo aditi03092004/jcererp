@@ -230,102 +230,102 @@ export const SecurityIncidentsTab: React.FC = () => {
 
   return (
     <div className="space-y-7 sm:space-y-8">
-      {/* ── Summary Cards Row (Starts immediately at top, no duplicate title) ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 sm:gap-5">
+      {/* ── Summary Cards Row (Clean, Compact, Aligned) ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5 sm:gap-4">
         <div
           onClick={() => setStatusFilter('ALL')}
-          className={`p-5 sm:p-6 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 border-l-4 border-l-violet-500 shadow-sm cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 ${
-            statusFilter === 'ALL' ? 'ring-2 ring-violet-500/20' : ''
+          className={`p-4 rounded-xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-2xs cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 ${
+            statusFilter === 'ALL' ? 'ring-2 ring-[#6D35E8]/40 border-purple-200' : ''
           }`}
         >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-neutral-600 dark:text-neutral-400">Total</span>
-            <div className="p-2 rounded-xl bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total</span>
+            <div className="size-7 rounded-lg bg-purple-50 dark:bg-purple-950/40 text-[#6D35E8] dark:text-purple-400 flex items-center justify-center">
               <Shield className="size-4" />
             </div>
           </div>
-          <div className="text-3xl sm:text-4xl font-extrabold text-neutral-900 dark:text-white leading-none mt-2">{totalCount}</div>
-          <p className="text-xs text-neutral-400 mt-2 font-medium">All ledger records</p>
+          <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white leading-none my-1.5">{totalCount}</div>
+          <p className="text-[11px] text-slate-400 font-medium">All ledger records</p>
         </div>
 
         <div
           onClick={() => setStatusFilter('NEW')}
-          className={`p-5 sm:p-6 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 border-l-4 border-l-rose-500 shadow-sm cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 ${
-            statusFilter === 'NEW' ? 'ring-2 ring-rose-500/20' : ''
+          className={`p-4 rounded-xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-2xs cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 ${
+            statusFilter === 'NEW' ? 'ring-2 ring-rose-500/40 border-rose-200' : ''
           }`}
         >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-neutral-600 dark:text-neutral-400">New</span>
-            <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">New</span>
+            <div className="size-7 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center justify-center">
               <Flame className="size-4" />
             </div>
           </div>
-          <div className="text-3xl sm:text-4xl font-extrabold text-rose-600 dark:text-rose-400 leading-none mt-2">{newCount}</div>
-          <p className="text-xs text-neutral-400 mt-2 font-medium">Pending triage</p>
+          <div className="text-2xl sm:text-3xl font-extrabold text-rose-600 dark:text-rose-400 leading-none my-1.5">{newCount}</div>
+          <p className="text-[11px] text-slate-400 font-medium">Pending triage</p>
         </div>
 
         <div
           onClick={() => setStatusFilter('INVESTIGATING')}
-          className={`p-5 sm:p-6 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 border-l-4 border-l-amber-500 shadow-sm cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 ${
-            statusFilter === 'INVESTIGATING' ? 'ring-2 ring-amber-500/20' : ''
+          className={`p-4 rounded-xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-2xs cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 ${
+            statusFilter === 'INVESTIGATING' ? 'ring-2 ring-amber-500/40 border-amber-200' : ''
           }`}
         >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-neutral-600 dark:text-neutral-400">Investigating</span>
-            <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Investigating</span>
+            <div className="size-7 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center">
               <Clock className="size-4" />
             </div>
           </div>
-          <div className="text-3xl sm:text-4xl font-extrabold text-amber-600 dark:text-amber-400 leading-none mt-2">{investigatingCount}</div>
-          <p className="text-xs text-neutral-400 mt-2 font-medium">Active analysis</p>
+          <div className="text-2xl sm:text-3xl font-extrabold text-amber-600 dark:text-amber-400 leading-none my-1.5">{investigatingCount}</div>
+          <p className="text-[11px] text-slate-400 font-medium">Active analysis</p>
         </div>
 
         <div
           onClick={() => setStatusFilter('MITIGATED')}
-          className={`p-5 sm:p-6 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 border-l-4 border-l-blue-500 shadow-sm cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 ${
-            statusFilter === 'MITIGATED' ? 'ring-2 ring-blue-500/20' : ''
+          className={`p-4 rounded-xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-2xs cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 ${
+            statusFilter === 'MITIGATED' ? 'ring-2 ring-blue-500/40 border-blue-200' : ''
           }`}
         >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-neutral-600 dark:text-neutral-400">Mitigated</span>
-            <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Mitigated</span>
+            <div className="size-7 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
               <ShieldAlert className="size-4" />
             </div>
           </div>
-          <div className="text-3xl sm:text-4xl font-extrabold text-blue-600 dark:text-blue-400 leading-none mt-2">{mitigatedCount}</div>
-          <p className="text-xs text-neutral-400 mt-2 font-medium">Threat contained</p>
+          <div className="text-2xl sm:text-3xl font-extrabold text-blue-600 dark:text-blue-400 leading-none my-1.5">{mitigatedCount}</div>
+          <p className="text-[11px] text-slate-400 font-medium">Threat contained</p>
         </div>
 
         <div
           onClick={() => setStatusFilter('RESOLVED')}
-          className={`p-5 sm:p-6 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 border-l-4 border-l-emerald-500 shadow-sm cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 ${
-            statusFilter === 'RESOLVED' ? 'ring-2 ring-emerald-500/20' : ''
+          className={`p-4 rounded-xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-2xs cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 ${
+            statusFilter === 'RESOLVED' ? 'ring-2 ring-emerald-500/40 border-emerald-200' : ''
           }`}
         >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-neutral-600 dark:text-neutral-400">Resolved</span>
-            <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Resolved</span>
+            <div className="size-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
               <CheckCircle2 className="size-4" />
             </div>
           </div>
-          <div className="text-3xl sm:text-4xl font-extrabold text-emerald-600 dark:text-emerald-400 leading-none mt-2">{resolvedCount}</div>
-          <p className="text-xs text-neutral-400 mt-2 font-medium">Closed with notes</p>
+          <div className="text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 leading-none my-1.5">{resolvedCount}</div>
+          <p className="text-[11px] text-slate-400 font-medium">Closed with notes</p>
         </div>
       </div>
 
       {/* ── Filter Toolbar ── */}
-      <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200/80 dark:border-neutral-800 p-5 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-neutral-900 rounded-xl border border-slate-200 dark:border-neutral-800 p-4 shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3">
           {/* Status Filter */}
-          <div className="flex items-center p-1 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700">
+          <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700">
             {['ALL', 'NEW', 'INVESTIGATING', 'MITIGATED', 'RESOLVED'].map((st) => (
               <button
                 key={st}
                 onClick={() => setStatusFilter(st)}
-                className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold tracking-tight transition cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-tight transition cursor-pointer ${
                   statusFilter === st
-                    ? 'bg-violet-600 text-white shadow-xs'
-                    : 'text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white'
+                    ? 'bg-[#6D35E8] text-white shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 {st}
@@ -337,7 +337,7 @@ export const SecurityIncidentsTab: React.FC = () => {
           <select
             value={severityFilter}
             onChange={(e) => setSeverityFilter(e.target.value)}
-            className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 text-xs sm:text-sm rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 cursor-pointer shadow-xs"
+            className="bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 text-slate-800 dark:text-slate-200 text-xs rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-[#6D35E8]/20 focus:border-[#6D35E8] cursor-pointer shadow-2xs font-semibold"
           >
             <option value="ALL">All Severities</option>
             <option value="CRITICAL">Critical</option>
@@ -361,18 +361,18 @@ export const SecurityIncidentsTab: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search incident number, title, IP..."
-              className="w-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 text-xs sm:text-sm rounded-xl pl-9 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 placeholder:text-neutral-400 shadow-xs"
+              className="w-full bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 text-slate-800 dark:text-slate-200 text-xs rounded-xl pl-9 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#6D35E8]/20 focus:border-[#6D35E8] placeholder:text-slate-400 shadow-2xs"
             />
-            <Search className="size-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="size-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           </form>
 
           <button
             onClick={fetchIncidents}
             disabled={refreshing}
-            className="flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 transition shadow-xs cursor-pointer disabled:opacity-50 shrink-0"
+            className="flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-white dark:bg-neutral-800 hover:bg-slate-50 dark:hover:bg-neutral-700 text-slate-700 dark:text-neutral-200 border border-slate-200 dark:border-neutral-700 transition shadow-2xs cursor-pointer disabled:opacity-50 shrink-0"
             title="Refresh Incidents"
           >
-            <RefreshCw className={`size-4 ${refreshing ? 'animate-spin text-violet-600 dark:text-violet-400' : ''}`} />
+            <RefreshCw className={`size-3.5 ${refreshing ? 'animate-spin text-[#6D35E8]' : ''}`} />
             <span className="hidden sm:inline">Refresh Incidents</span>
           </button>
         </div>

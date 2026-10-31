@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import SecurityOverviewTab from './tabs/SecurityOverviewTab';
+import SecurityAnalyticsTab from './tabs/SecurityAnalyticsTab';
 import LiveThreatMonitorTab from './tabs/LiveThreatMonitorTab';
 import SecurityIncidentsTab from './tabs/SecurityIncidentsTab';
 import BlockedRequestsTab from './tabs/BlockedRequestsTab';
@@ -19,6 +20,7 @@ export const AgentShieldDashboard: React.FC = () => {
       {currentTab === 'overview' && (
         <SecurityOverviewTab onOpenHealthModal={() => setIsHealthModalOpen(true)} />
       )}
+      {currentTab === 'analytics' && <SecurityAnalyticsTab />}
       {currentTab === 'live' && <LiveThreatMonitorTab />}
       {currentTab === 'incidents' && <SecurityIncidentsTab />}
       {currentTab === 'blocked' && <BlockedRequestsTab />}

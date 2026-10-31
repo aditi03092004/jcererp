@@ -115,18 +115,18 @@ export const LiveThreatMonitorTab: React.FC = () => {
   return (
     <div className="space-y-7 sm:space-y-8">
       {/* ── Filter & Search Toolbar (Top element, no duplicate title) ── */}
-      <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200/80 dark:border-neutral-800 p-5 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-neutral-900 rounded-xl border border-slate-200 dark:border-neutral-800 p-4 shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3">
           {/* Risk Level Filter Buttons */}
-          <div className="flex items-center p-1 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700">
+          <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700">
             {['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map((risk) => (
               <button
                 key={risk}
                 onClick={() => setSelectedRisk(risk)}
-                className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold tracking-tight transition cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-tight transition cursor-pointer ${
                   selectedRisk === risk
-                    ? 'bg-violet-600 text-white shadow-xs'
-                    : 'text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white'
+                    ? 'bg-[#6D35E8] text-white shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 {risk}
@@ -138,7 +138,7 @@ export const LiveThreatMonitorTab: React.FC = () => {
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 text-xs sm:text-sm rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 cursor-pointer shadow-xs"
+            className="bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 text-slate-800 dark:text-neutral-200 text-xs rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-[#6D35E8]/20 focus:border-[#6D35E8] cursor-pointer shadow-2xs font-semibold"
           >
             <option value="ALL">All Categories</option>
             <option value="RECONNAISSANCE">Reconnaissance</option>
@@ -151,7 +151,7 @@ export const LiveThreatMonitorTab: React.FC = () => {
 
           {/* Streaming Status Badge */}
           <span
-            className={`hidden xl:inline-flex items-center gap-1.5 text-xs font-extrabold uppercase px-3 py-1 rounded-full border ${
+            className={`hidden xl:inline-flex items-center gap-1.5 text-xs font-bold uppercase px-3 py-1 rounded-full border ${
               socketConnected
                 ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400'
                 : 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400'
@@ -170,18 +170,18 @@ export const LiveThreatMonitorTab: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search endpoint, IP, correlation ID..."
-              className="w-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 text-xs sm:text-sm rounded-xl pl-9 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 placeholder:text-neutral-400 shadow-xs"
+              className="w-full bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 text-slate-800 dark:text-neutral-200 text-xs rounded-xl pl-9 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#6D35E8]/20 focus:border-[#6D35E8] placeholder:text-slate-400 shadow-2xs"
             />
-            <Search className="size-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="size-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           </form>
 
           <button
             onClick={fetchEvents}
             disabled={refreshing}
-            className="flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 transition shadow-xs cursor-pointer disabled:opacity-50 shrink-0"
+            className="flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-white dark:bg-neutral-800 hover:bg-slate-50 dark:hover:bg-neutral-700 text-slate-700 dark:text-neutral-200 border border-slate-200 dark:border-neutral-700 transition shadow-2xs cursor-pointer disabled:opacity-50 shrink-0"
             title="Refresh Feed"
           >
-            <RefreshCw className={`size-4 ${refreshing ? 'animate-spin text-violet-600 dark:text-violet-400' : ''}`} />
+            <RefreshCw className={`size-3.5 ${refreshing ? 'animate-spin text-[#6D35E8]' : ''}`} />
             <span className="hidden sm:inline">Refresh Feed</span>
           </button>
         </div>

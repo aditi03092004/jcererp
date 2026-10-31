@@ -120,10 +120,74 @@ export interface SecurityAuditLogItem {
   details?: any;
 }
 
+export interface SecurityAnalyticsData {
+  timeRange: string;
+  startDate: string;
+  endDate: string;
+  summary: {
+    totalEvents: number;
+    criticalThreats: number;
+    highThreats: number;
+    mediumThreats: number;
+    lowThreats: number;
+    blockedRequests: number;
+    openIncidents: number;
+    resolvedIncidents: number;
+  };
+  eventsOverTime: Array<{
+    label: string;
+    timestamp: string;
+    events: number;
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
+  }>;
+  severityDistribution: Array<{
+    name: string;
+    value: number;
+    color: string;
+  }>;
+  categoryDistribution: Array<{
+    category: string;
+    name: string;
+    count: number;
+  }>;
+  securityResponseAnalytics: Array<{
+    action: string;
+    label: string;
+    count: number;
+    color: string;
+  }>;
+  incidentStatusDistribution: Array<{
+    name: string;
+    value: number;
+    color: string;
+  }>;
+  topEndpoints: Array<{
+    endpoint: string;
+    eventCount: number;
+    highestSeverity: string;
+    lastOccurrence: string;
+  }>;
+  topSources: Array<{
+    sourceIdentifier: string;
+    eventCount: number;
+    highestSeverity: string;
+    lastOccurrence: string;
+  }>;
+}
+
 export const agentshieldService = {
   // 1. Overview
   async getOverview() {
     const res = await API.get('/agentshield/overview');
+    return res.data;
+  },
+
+  // 1.5. Analytics
+  async getAnalytics(params?: { timeRange?: string; startDate?: string; endDate?: string }) {
+    const res = await API.get('/agentshield/analytics', { params });
     return res.data;
   },
 

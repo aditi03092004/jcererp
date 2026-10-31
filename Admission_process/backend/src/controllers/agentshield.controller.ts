@@ -27,6 +27,300 @@ export const getOverview = async (req: AuthenticatedRequest, res: Response, next
 };
 
 /**
+ * 1.5. Security Analytics Aggregations
+ */
+export const getAnalytics = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<any> => {
+  try {
+    const timeRange = (req.query.timeRange as string) || '24h';
+    const now = new Date();
+    let startDate: Date;
+
+    if (timeRange === '7d') {
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    } else if (timeRange === '30d') {
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    } else if (timeRange === 'custom' && req.query.startDate) {
+      startDate = new Date(req.query.startDate as string);
+    } else {
+      // default 24h
+      startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    }
+
+    const endDate = req.query.endDate ? new Date(req.query.endDate as string) : now;
+
+    // 1. Fetch all events in the timeframe
+    const events = await SecurityEvent.findAll({
+      where: {
+        timestamp: {
+          [Op.gte]: startDate,
+          [Op.lte]: endDate,
+        },
+      },
+      order: [['timestamp', 'ASC']],
+    });
+
+    // Also get all-time open and resolved incidents for comprehensive status
+    const allOpenIncidentsCount = await SecurityIncident.count({
+      where: { status: { [Op.in]: ['NEW', 'INVESTIGATING'] } },
+    });
+    const allResolvedIncidentsCount = await SecurityIncident.count({
+      where: { status: 'RESOLVED' },
+    });
+
+    // Compute Summary KPIs
+    const totalEvents = events.length;
+    const criticalThreats = events.filter((e) => e.riskLevel === 'CRITICAL').length;
+    const highThreats = events.filter((e) => e.riskLevel === 'HIGH').length;
+    const mediumThreats = events.filter((e) => e.riskLevel === 'MEDIUM').length;
+    const lowThreats = events.filter((e) => e.riskLevel === 'LOW').length;
+    const blockedRequests = events.filter((e) =>
+      ['BLOCKED', 'RATE_LIMITED', 'HONEYPOT_TRIGGER'].includes(e.responseAction)
+    ).length;
+
+    // 2. Time Series: Events Over Time
+    const isHourly = timeRange === '24h' || (endDate.getTime() - startDate.getTime() <= 36 * 60 * 60 * 1000);
+    const bucketMap = new Map<string, { label: string; timestamp: string; events: number; critical: number; high: number; medium: number; low: number }>();
+
+    if (isHourly) {
+      // Create hourly buckets
+      const cursor = new Date(startDate);
+      cursor.setMinutes(0, 0, 0);
+      while (cursor <= endDate) {
+        const key = cursor.toISOString().slice(0, 13);
+        const hours = cursor.getHours().toString().padStart(2, '0');
+        bucketMap.set(key, {
+          label: `${hours}:00`,
+          timestamp: cursor.toISOString(),
+          events: 0,
+          critical: 0,
+          high: 0,
+          medium: 0,
+          low: 0,
+        });
+        cursor.setHours(cursor.getHours() + 1);
+      }
+
+      events.forEach((ev) => {
+        const evDate = new Date(ev.timestamp);
+        const key = evDate.toISOString().slice(0, 13);
+        const bucket = bucketMap.get(key);
+        if (bucket) {
+          bucket.events++;
+          if (ev.riskLevel === 'CRITICAL') bucket.critical++;
+          else if (ev.riskLevel === 'HIGH') bucket.high++;
+          else if (ev.riskLevel === 'MEDIUM') bucket.medium++;
+          else if (ev.riskLevel === 'LOW') bucket.low++;
+        }
+      });
+    } else {
+      // Create daily buckets
+      const cursor = new Date(startDate);
+      cursor.setHours(0, 0, 0, 0);
+      while (cursor <= endDate) {
+        const key = cursor.toISOString().slice(0, 10);
+        const month = cursor.toLocaleString('default', { month: 'short' });
+        const day = cursor.getDate();
+        bucketMap.set(key, {
+          label: `${month} ${day}`,
+          timestamp: cursor.toISOString(),
+          events: 0,
+          critical: 0,
+          high: 0,
+          medium: 0,
+          low: 0,
+        });
+        cursor.setDate(cursor.getDate() + 1);
+      }
+
+      events.forEach((ev) => {
+        const evDate = new Date(ev.timestamp);
+        const key = evDate.toISOString().slice(0, 10);
+        const bucket = bucketMap.get(key);
+        if (bucket) {
+          bucket.events++;
+          if (ev.riskLevel === 'CRITICAL') bucket.critical++;
+          else if (ev.riskLevel === 'HIGH') bucket.high++;
+          else if (ev.riskLevel === 'MEDIUM') bucket.medium++;
+          else if (ev.riskLevel === 'LOW') bucket.low++;
+        }
+      });
+    }
+
+    const eventsOverTime = Array.from(bucketMap.values());
+
+    // 3. Threat Severity Distribution
+    const severityDistribution = [
+      { name: 'Critical', value: criticalThreats, color: '#DC2626' },
+      { name: 'High', value: highThreats, color: '#EA580C' },
+      { name: 'Medium', value: mediumThreats, color: '#D97706' },
+      { name: 'Low', value: lowThreats, color: '#64748B' },
+    ];
+
+    // 4. Threat Category Distribution
+    const categoryNameMap: Record<string, string> = {
+      DECEPTION: 'Honeypot Detection',
+      RECONNAISSANCE: 'Route Probing',
+      ACCESS_CONTROL: 'Unauthorized Access',
+      INJECTION: 'Injection Attempts',
+      AUTHENTICATION: 'Brute Force',
+      DOS_THROTTLE: 'Rate Anomalies',
+    };
+
+    const categoryCounts: Record<string, number> = {};
+    events.forEach((e) => {
+      const cat = e.category || 'OTHER';
+      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+    });
+
+    const categoryDistribution = Object.keys(categoryCounts).map((cat) => ({
+      category: cat,
+      name: categoryNameMap[cat] || cat,
+      count: categoryCounts[cat],
+    })).sort((a, b) => b.count - a.count);
+
+    // 5. Security Response Analytics
+    const responseCounts: Record<string, number> = {
+      BLOCKED: 0,
+      RATE_LIMITED: 0,
+      HONEYPOT_TRIGGER: 0,
+      MONITOR: 0,
+    };
+
+    events.forEach((e) => {
+      const action = e.responseAction || 'MONITOR';
+      if (responseCounts[action] !== undefined) {
+        responseCounts[action]++;
+      } else {
+        responseCounts.MONITOR++;
+      }
+    });
+
+    const securityResponseAnalytics = [
+      { action: 'BLOCKED', label: 'Blocked Requests', count: responseCounts.BLOCKED, color: '#DC2626' },
+      { action: 'RATE_LIMITED', label: 'Rate-Limited Requests', count: responseCounts.RATE_LIMITED, color: '#EA580C' },
+      { action: 'HONEYPOT_TRIGGER', label: 'Honeypot Traps', count: responseCounts.HONEYPOT_TRIGGER, color: '#6D35E8' },
+      { action: 'MONITOR', label: 'Monitored Signals', count: responseCounts.MONITOR, color: '#0EA5E9' },
+    ];
+
+    // 6. Incident Status Distribution
+    const allIncidents = await SecurityIncident.findAll({ attributes: ['status'] });
+    const incidentStatusCounts: Record<string, number> = {
+      NEW: 0,
+      INVESTIGATING: 0,
+      MITIGATED: 0,
+      RESOLVED: 0,
+    };
+    allIncidents.forEach((inc) => {
+      if (incidentStatusCounts[inc.status] !== undefined) {
+        incidentStatusCounts[inc.status]++;
+      }
+    });
+
+    const incidentStatusDistribution = [
+      { name: 'New', value: incidentStatusCounts.NEW, color: '#DC2626' },
+      { name: 'Investigating', value: incidentStatusCounts.INVESTIGATING, color: '#D97706' },
+      { name: 'Mitigated', value: incidentStatusCounts.MITIGATED, color: '#2563EB' },
+      { name: 'Resolved', value: incidentStatusCounts.RESOLVED, color: '#16A34A' },
+    ];
+
+    // 7. Top Targeted Endpoints
+    const endpointMap = new Map<string, { endpoint: string; eventCount: number; highestSeverity: string; lastOccurrence: Date }>();
+    const severityWeight: Record<string, number> = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
+
+    events.forEach((ev) => {
+      const ep = ev.route || 'Unknown';
+      const existing = endpointMap.get(ep);
+      const evDate = new Date(ev.timestamp);
+      if (!existing) {
+        endpointMap.set(ep, {
+          endpoint: ep,
+          eventCount: 1,
+          highestSeverity: ev.riskLevel,
+          lastOccurrence: evDate,
+        });
+      } else {
+        existing.eventCount++;
+        if ((severityWeight[ev.riskLevel] || 0) > (severityWeight[existing.highestSeverity] || 0)) {
+          existing.highestSeverity = ev.riskLevel;
+        }
+        if (evDate > existing.lastOccurrence) {
+          existing.lastOccurrence = evDate;
+        }
+      }
+    });
+
+    const topEndpoints = Array.from(endpointMap.values())
+      .sort((a, b) => b.eventCount - a.eventCount)
+      .slice(0, 8)
+      .map((item) => ({
+        ...item,
+        lastOccurrence: item.lastOccurrence.toISOString(),
+      }));
+
+    // 8. Top Detection Sources
+    const sourceMap = new Map<string, { sourceIdentifier: string; eventCount: number; highestSeverity: string; lastOccurrence: Date }>();
+
+    events.forEach((ev) => {
+      const src = ev.clientIp || '127.0.0.1';
+      const existing = sourceMap.get(src);
+      const evDate = new Date(ev.timestamp);
+      if (!existing) {
+        sourceMap.set(src, {
+          sourceIdentifier: src,
+          eventCount: 1,
+          highestSeverity: ev.riskLevel,
+          lastOccurrence: evDate,
+        });
+      } else {
+        existing.eventCount++;
+        if ((severityWeight[ev.riskLevel] || 0) > (severityWeight[existing.highestSeverity] || 0)) {
+          existing.highestSeverity = ev.riskLevel;
+        }
+        if (evDate > existing.lastOccurrence) {
+          existing.lastOccurrence = evDate;
+        }
+      }
+    });
+
+    const topSources = Array.from(sourceMap.values())
+      .sort((a, b) => b.eventCount - a.eventCount)
+      .slice(0, 8)
+      .map((item) => ({
+        ...item,
+        lastOccurrence: item.lastOccurrence.toISOString(),
+      }));
+
+    return res.json({
+      success: true,
+      data: {
+        timeRange,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        summary: {
+          totalEvents,
+          criticalThreats,
+          highThreats,
+          mediumThreats,
+          lowThreats,
+          blockedRequests,
+          openIncidents: allOpenIncidentsCount,
+          resolvedIncidents: allResolvedIncidentsCount,
+        },
+        eventsOverTime,
+        severityDistribution,
+        categoryDistribution,
+        securityResponseAnalytics,
+        incidentStatusDistribution,
+        topEndpoints,
+        topSources,
+      },
+    });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+/**
  * 2. Paginated Security Events
  */
 export const getEvents = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<any> => {

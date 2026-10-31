@@ -70,13 +70,13 @@ export const SecurityAuditLogsTab: React.FC = () => {
   return (
     <div className="space-y-7 sm:space-y-8">
       {/* ── Filter Toolbar (Top element, no duplicate title) ── */}
-      <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200/80 dark:border-neutral-800 p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-neutral-900 rounded-xl border border-slate-200 dark:border-neutral-800 p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center space-x-3">
-          <span className="text-xs sm:text-sm font-bold text-neutral-600 dark:text-neutral-400">Filter Action:</span>
+          <span className="text-xs font-bold text-slate-600 dark:text-slate-400">Filter Action:</span>
           <select
             value={actionFilter}
             onChange={(e) => setActionFilter(e.target.value)}
-            className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 text-xs sm:text-sm rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 cursor-pointer shadow-xs"
+            className="bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 text-slate-800 dark:text-neutral-200 text-xs rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-[#6D35E8]/20 focus:border-[#6D35E8] cursor-pointer shadow-2xs font-semibold"
           >
             <option value="ALL">All Actions</option>
             <option value="UPDATE_INCIDENT_STATUS">Incident Status Updates</option>
@@ -89,16 +89,16 @@ export const SecurityAuditLogsTab: React.FC = () => {
         </div>
 
         <div className="flex items-center space-x-3 self-start sm:self-auto">
-          <span className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 font-mono font-medium">
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-mono font-medium">
             Showing {logs.length} audited entries
           </span>
 
           <button
             onClick={fetchAuditLogs}
             disabled={refreshing}
-            className="flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 transition shadow-xs cursor-pointer disabled:opacity-50"
+            className="flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-white dark:bg-neutral-800 hover:bg-slate-50 dark:hover:bg-neutral-700 text-slate-700 dark:text-neutral-200 border border-slate-200 dark:border-neutral-700 transition shadow-2xs cursor-pointer disabled:opacity-50"
           >
-            <RefreshCw className={`size-4 ${refreshing ? 'animate-spin text-violet-600 dark:text-violet-400' : ''}`} />
+            <RefreshCw className={`size-3.5 ${refreshing ? 'animate-spin text-[#6D35E8]' : ''}`} />
             <span>Refresh Audit Trail</span>
           </button>
         </div>

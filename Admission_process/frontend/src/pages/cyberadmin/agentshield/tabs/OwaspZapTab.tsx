@@ -243,7 +243,7 @@ export const OwaspZapTab: React.FC = () => {
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}
-                    className="flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-violet-600 hover:bg-violet-700 text-white transition shadow-xs cursor-pointer disabled:opacity-50 shrink-0"
+                    className="flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-[#6D35E8] hover:bg-[#5b2cc2] text-white transition shadow-2xs cursor-pointer disabled:opacity-50 shrink-0"
                   >
                     <Upload className="size-4" />
                     <span>{uploading ? 'Parsing...' : 'Import ZAP Report'}</span>

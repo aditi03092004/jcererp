@@ -58,17 +58,17 @@ export const BlockedRequestsTab: React.FC = () => {
   return (
     <div className="space-y-7 sm:space-y-8">
       {/* ── Active Restrictions Section (Top element, no duplicate title) ── */}
-      <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200/80 dark:border-neutral-800 p-6 sm:p-7 shadow-sm space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-neutral-100 dark:border-neutral-800">
+      <div className="bg-white dark:bg-neutral-900 rounded-xl border border-slate-200 dark:border-neutral-800 p-5 sm:p-6 shadow-2xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-100 dark:border-neutral-800">
           <div className="flex items-center space-x-3">
-            <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-900/60">
-              <Lock className="size-5" />
+            <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-[#6D35E8] dark:text-purple-400 border border-purple-100 dark:border-purple-900/60">
+              <Lock className="size-4.5" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-extrabold text-neutral-900 dark:text-white uppercase tracking-wider">
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">
                 Active Source IP Cooldowns ({activeRestrictions.length})
               </h2>
-              <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Temporary, reversible protective throttles applied to abusive sources.
               </p>
             </div>
@@ -77,9 +77,9 @@ export const BlockedRequestsTab: React.FC = () => {
           <button
             onClick={fetchBlockedData}
             disabled={refreshing}
-            className="self-start sm:self-auto flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 transition shadow-xs cursor-pointer disabled:opacity-50 shrink-0"
+            className="self-start sm:self-auto flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-white dark:bg-neutral-800 hover:bg-slate-50 dark:hover:bg-neutral-700 text-slate-700 dark:text-neutral-200 border border-slate-200 dark:border-neutral-700 transition shadow-2xs cursor-pointer disabled:opacity-50 shrink-0"
           >
-            <RefreshCw className={`size-4 ${refreshing ? 'animate-spin text-violet-600 dark:text-violet-400' : ''}`} />
+            <RefreshCw className={`size-3.5 ${refreshing ? 'animate-spin text-[#6D35E8]' : ''}`} />
             <span>Refresh Restrictions</span>
           </button>
         </div>
